@@ -4,6 +4,7 @@ import OpenAI from 'openai'
 import dotenv from 'dotenv'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { checkApiConnection, createEvent } from './wordpress-api.js'
 
 // Load environment variables
 dotenv.config()
@@ -167,6 +168,87 @@ ${content.slice(0, 3000)}
 		return res.status(500).json({
 			error: 'Failed to process event',
 			details: error.message,
+		})
+	}
+})
+
+// Add this new route with improved error handling
+app.post('/submit-to-wordpress', validateToken, async (req, res) => {
+	try {
+		const { eventData } = req.body
+
+		if (!eventData || !eventData.title || !eventData.start_time) {
+			return res.status(400).json({
+				success: false,
+				message: 'Missing required event data',
+			})
+		}
+
+		console.log(`Submitting event to WordPress: ${eventData.title}`)
+
+		// Add more detailed logging
+		console.log('WordPress API URL:', process.env.WP_API_URL)
+		console.log('WordPress Username:', process.env.WP_USERNAME)
+		console.log('Event data:', JSON.stringify(eventData, null, 2))
+
+		const result = await createEvent(eventData)
+
+		return res.json(result)
+	} catch (error) {
+		console.error('Error submitting to WordPress:', error)
+		return res.status(500).json({
+			success: false,
+			message: 'Failed to submit event to WordPress',
+			error: error.message,
+		})
+	}
+})
+
+// Add this route to test WordPress connection
+app.get('/test-wordpress', async (req, res) => {
+	try {
+		const result = await checkApiConnection()
+		res.json(result)
+	} catch (error) {
+		res.status(500).json({
+			success: false,
+			message: 'Error testing WordPress connection',
+			error: error.message,
+		})
+	}
+})
+
+// Add this to server.js
+app.get('/check-events-api', async (req, res) => {
+	try {
+		// Check The Events Calendar REST API
+		const tecApiResponse = await fetch(
+			`${process.env.WP_API_URL}/tribe/events/v1/events?per_page=1`
+		)
+		const tecApiWorks = tecApiResponse.ok
+		const tecApiStatus = tecApiResponse.status
+
+		// Check WordPress core REST API with TEC post type
+		const wpApiResponse = await fetch(
+			`${process.env.WP_API_URL}/wp/v2/tribe_events?per_page=1`
+		)
+		const wpApiWorks = wpApiResponse.ok
+		const wpApiStatus = wpApiResponse.status
+
+		res.json({
+			success: true,
+			tecApiAvailable: tecApiWorks,
+			tecApiStatus,
+			wpApiAvailable: wpApiWorks,
+			wpApiStatus,
+			recommendation: tecApiWorks
+				? 'Use The Events Calendar REST API'
+				: 'Use WordPress Core REST API with TEC fields',
+		})
+	} catch (error) {
+		res.json({
+			success: false,
+			error: error.message,
 		})
 	}
 })
