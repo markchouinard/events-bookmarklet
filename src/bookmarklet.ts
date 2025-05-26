@@ -189,6 +189,26 @@
 
 		dialog.appendChild(contentDiv)
 
+		// Add event image if available
+		if (eventData.image_url) {
+			const imageContainer = document.createElement('div')
+			imageContainer.style.marginBottom = '15px'
+			imageContainer.style.textAlign = 'center'
+
+			const image = document.createElement('img')
+			image.src = eventData.image_url
+			image.alt = eventData.title || 'Event image'
+			image.style.maxWidth = '100%'
+			image.style.maxHeight = '300px'
+			image.style.borderRadius = '4px'
+			image.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)'
+
+			imageContainer.appendChild(image)
+
+			// Insert image at the top of the content
+			dialog.insertBefore(imageContainer, contentDiv)
+		}
+
 		// Add close button
 		const closeButton = document.createElement('button')
 		closeButton.textContent = 'Close'
