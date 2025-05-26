@@ -1,0 +1,24 @@
+{
+	"compilerOptions": {
+		"target": "es2018",
+		"module": "esnext",
+		"moduleResolution": "node",
+		"strict": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"outDir": "dist",
+		"lib": ["dom", "es2018"],
+		"noImplicitAny": true,
+		"strictNullChecks": true
+	},
+	"include": ["src/**/*"],
+	"scripts": {
+		"build:dev": "webpack --mode=development",
+		"build:prod": "webpack --mode=production",
+		"minify": "terser dist/bookmarklet.js -c -m -o dist/bookmarklet.min.js",
+		"build": "pnpm build:dev && pnpm minify && node scripts/wrap-bookmarklet.js",
+		"build:production": "pnpm build:prod && pnpm minify && node scripts/wrap-bookmarklet.js",
+		"start": "pnpm build && node server.js"
+	}
+}

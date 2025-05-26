@@ -1,0 +1,33 @@
+{
+	"name": "bookmarklet",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"type": "module",
+	"scripts": {
+		"build:ts": "tsc",
+		"build": "pnpm build:ts && pnpm minify && node scripts/wrap-bookmarklet.js",
+		"minify": "terser dist/bookmarklet.js -c -m -o dist/bookmarklet.min.js",
+		"start": "pnpm build && node server.js"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"packageManager": "pnpm@10.11.0",
+	"dependencies": {
+		"@sentry/browser": "^9.22.0",
+		"body-parser": "^2.2.0",
+		"dotenv": "^16.5.0",
+		"express": "^5.1.0",
+		"openai": "^4.103.0"
+	},
+	"devDependencies": {
+		"@types/node": "^22.15.21",
+		"nodemon": "^3.1.10",
+		"terser": "^5.39.2",
+		"ts-loader": "^9.5.2",
+		"typescript": "^5.8.3",
+		"webpack": "^5.99.9",
+		"webpack-cli": "^6.0.1"
+	}
+}
