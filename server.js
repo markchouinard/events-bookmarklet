@@ -8,6 +8,28 @@ import { fileURLToPath } from 'url'
 // Load environment variables
 dotenv.config()
 
+// Override with environment-specific file if available
+if (process.env.NODE_ENV) {
+	dotenv.config({ path: `.env.${process.env.NODE_ENV}`, override: true })
+}
+
+const config = {
+	server: {
+		port: process.env.PORT || 3000,
+		environment: process.env.NODE_ENV || 'development',
+	},
+	wordpress: {
+		apiUrl: process.env.WP_API_URL,
+		eventEndpoint: process.env.WP_EVENT_ENDPOINT,
+		authMethod: process.env.WP_AUTH_METHOD,
+		username: process.env.WP_USERNAME,
+		appPassword: process.env.WP_APP_PASSWORD,
+	},
+}
+
+console.log(`Server starting in ${config.server.environment} mode`)
+console.log(`WordPress API URL: ${config.wordpress.apiUrl}`)
+
 // Get current file's directory
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)

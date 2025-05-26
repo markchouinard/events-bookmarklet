@@ -8,8 +8,11 @@ import { parseEventData } from './utils/Parser'
 import { EventData } from './types'
 
 // Main functionality
+import { showEnvironmentBadge } from './utils/UIUtils'
 ;(function () {
 	try {
+		// Ensure environment badge is visible
+		showEnvironmentBadge()
 		const url = window.location.href
 		const content = document.body.innerText.slice(0, 10000)
 

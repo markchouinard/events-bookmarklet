@@ -7,9 +7,13 @@
 	"scripts": {
 		"build:ts": "tsc",
 		"build": "node scripts/bundle.js",
+		"build:staging": "NODE_ENV=staging node scripts/bundle.js",
+		"build:prod": "NODE_ENV=production node scripts/bundle.js",
 		"minify": "terser dist/bookmarklet.js -c -m -o dist/bookmarklet.min.js",
 		"server": "node server.js",
-		"start": "npm run build && npm run server"
+		"start": "node scripts/bundle.js && node server.js",
+		"start:staging": "NODE_ENV=staging npm run build:staging && NODE_ENV=staging node server.js",
+		"start:prod": "NODE_ENV=production npm run build:prod && NODE_ENV=production node server.js"
 	},
 	"keywords": [],
 	"author": "",
