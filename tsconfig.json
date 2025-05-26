@@ -1,16 +1,12 @@
 {
 	"compilerOptions": {
-		"target": "es2018",
+		"target": "es2015",
 		"module": "esnext",
 		"moduleResolution": "node",
 		"strict": true,
 		"esModuleInterop": true,
-		"skipLibCheck": true,
-		"forceConsistentCasingInFileNames": true,
-		"outDir": "dist",
-		"lib": ["dom", "es2018"],
-		"noImplicitAny": true,
-		"strictNullChecks": true
+		"outDir": "./dist",
+		"sourceMap": false
 	},
 	"include": ["src/**/*"],
 	"scripts": {
