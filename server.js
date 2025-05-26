@@ -75,9 +75,21 @@ You are an assistant that extracts structured event data from webpages. Given th
 - location
 - source_url
 - tags (short keywords)
-- image_url (select the most appropriate image URL that represents this event, or null if none are suitable.  Use hints like class names to determine if an image is suitable.  Meetup seems to use "event-description-image" for event images, but this may vary.)
+- image_url (select the most appropriate image URL that represents this event)
 
-If the event isn't relevant to tech, professional networking, or IT in California, return: { "irrelevant": true }
+If the event isn't relevant to tech, blockchain, WordPress, programming, professional networking, or IT in California or online, return:
+{
+  "irrelevant": true,
+  "relevance_score": 0-100,
+  "relevance_reason": "Brief explanation why this event isn't relevant"
+}
+
+IMPORTANT INSTRUCTIONS FOR RELEVANCE:
+- Tech events include: software development, IT, data science, AI/ML, cybersecurity, tech conferences
+- Professional networking includes: career fairs, industry meetups, professional development
+- California focus: prioritize events in California, especially Northern California and Sacramento area
+- Score relevance from 0-100, with 75+ being highly relevant
+- Provide clear reasoning for irrelevant events
 
 URL: ${url}
 
@@ -85,37 +97,146 @@ IMAGES: ${images ? JSON.stringify(images) : 'No images available'}
 
 TEXT:
 ${content.slice(0, 3000)}
-    `.trim()
+`.trim()
 
-		const response = await openai.chat.completions.create({
-			model: 'gpt-4o',
-			messages: [{ role: 'user', content: prompt }],
-			temperature: 0.3,
-		})
-
-		const result = response.choices[0].message.content
-		console.log('✅ Extracted event:', result)
-
-		// Parse the JSON from the response
 		try {
-			let cleanResult
-			if (result.includes('')) {
-				// Extract JSON from markdown code block
-				const match = result.match(/(?:json)?\s*([\s\S]+?)\s*```/)
-				if (match && match[1]) {
-					cleanResult = JSON.parse(match[1].trim())
-				}
-			} else if (result.trim().startsWith('{')) {
-				cleanResult = JSON.parse(result)
-			} else {
-				cleanResult = { raw: result }
-			}
+			const response = await openai.chat.completions.create({
+				model: 'gpt-4o',
+				messages: [{ role: 'user', content: prompt }],
+				temperature: 0.3,
+			})
 
-			// Send parsed object
-			res.json({ result: cleanResult })
-		} catch (parseError) {
-			console.error('❌ JSON parsing error:', parseError)
-			res.json({ result: result, parseError: parseError.message })
+			const result = response.choices[0].message.content
+			console.log('✅ Extracted event:', result)
+
+			// Improved parsing logic
+			try {
+				let parsedResult
+
+				// Case 1: Check for markdown code blocks
+				if (result.includes('')) {
+					console.log('Detected markdown code block format')
+
+					// Extract just the JSON content
+					// This regex captures everything between json and  but not including the backticks
+					const codeBlockRegex = /(?:json)?\n([\s\S]+?)\n```/
+					const jsonMatch = result.match(codeBlockRegex)
+
+					if (jsonMatch && jsonMatch[1]) {
+						const jsonContent = jsonMatch[1].trim()
+						console.log(
+							'Extracted JSON content without backticks:',
+							jsonContent
+						)
+						parsedResult = JSON.parse(jsonContent)
+					} else {
+						throw new Error(
+							'Could not extract JSON from markdown block'
+						)
+					}
+				}
+				// Case 2: Direct JSON
+				else if (result.trim().startsWith('{')) {
+					parsedResult = JSON.parse(result)
+				}
+				// Case 3: Unexpected format
+				else {
+					throw new Error('Response is not in expected format')
+				}
+
+				// Add default image for Python events if none was found
+				if (
+					parsedResult &&
+					!parsedResult.irrelevant &&
+					!parsedResult.image_url
+				) {
+					// Check if this is a Python event
+					const tags = parsedResult.tags || []
+					const isPythonEvent = tags.some(
+						(tag) =>
+							tag.toLowerCase().includes('python') ||
+							(parsedResult.title &&
+								parsedResult.title
+									.toLowerCase()
+									.includes('python'))
+					)
+
+					if (isPythonEvent) {
+						console.log('Adding Python placeholder image')
+						parsedResult.image_url =
+							'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/1200px-Python-logo-notext.svg.png'
+					} else {
+						// Generic tech event placeholder
+						console.log('Adding generic tech event placeholder')
+						parsedResult.image_url =
+							'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4'
+					}
+				}
+
+				// Send the parsed result
+				res.json({ result: parsedResult })
+			} catch (parseError) {
+				console.error('❌ JSON parsing error:', parseError)
+
+				// Last resort: manual extraction attempt
+				try {
+					console.log('Attempting manual JSON extraction')
+
+					// Try to extract anything that looks like JSON
+					const jsonPattern = /{[\s\S]*}/
+					const possibleJson = result.match(jsonPattern)
+
+					if (possibleJson) {
+						const extractedJson = possibleJson[0]
+						console.log('Manually extracted JSON:', extractedJson)
+
+						const manuallyParsed = JSON.parse(extractedJson)
+						console.log(
+							'Successfully parsed manually extracted JSON'
+						)
+
+						// Add default image
+						if (
+							!manuallyParsed.image_url &&
+							(manuallyParsed.title
+								?.toLowerCase()
+								.includes('python') ||
+								manuallyParsed.tags?.some((t) =>
+									t.toLowerCase().includes('python')
+								))
+						) {
+							manuallyParsed.image_url =
+								'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/1200px-Python-logo-notext.svg.png'
+						}
+
+						res.json({ result: manuallyParsed })
+						return
+					}
+				} catch (manualError) {
+					console.error(
+						'❌ Manual extraction also failed:',
+						manualError
+					)
+				}
+
+				// If all parsing fails, return a basic object with the raw data
+				res.json({
+					result: {
+						title:
+							result.match(/"title":\s*"([^"]+)"/)?.[1] ||
+							'Parsing Error',
+						description:
+							'Could not parse the extracted data properly',
+						raw: result,
+						error: parseError.message,
+						image_url:
+							'https://images.unsplash.com/photo-1516321318423-f06f85e504b3',
+					},
+				})
+			}
+		} catch (err) {
+			console.error('❌ GPT error:', err)
+			res.status(500).json({ error: 'GPT extraction failed.' })
 		}
 	} catch (err) {
 		console.error('❌ Server error:', err)
