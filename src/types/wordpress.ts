@@ -52,34 +52,60 @@ export interface EventData {
 	content: string
 	excerpt?: string
 	status?: 'publish' | 'draft' | 'private'
-	start_date: string
-	end_date: string
-	all_day?: boolean
-	timezone?: string
-	featured?: boolean
-	venue?: {
-		venue: string
-		address?: string
-		city?: string
-		state?: string
-		province?: string
-		zip?: string
-		country?: string
-		phone?: string
-		website?: string
-	}
-	organizer?: {
-		organizer: string
-		phone?: string
-		website?: string
-		email?: string
-	}
-	cost?: string
+
+	// Date/Time fields - use these instead of meta fields
+	start_date: string // Instead of _EventStartDate
+	end_date: string // Instead of _EventEndDate
+	timezone?: string // Instead of _EventTimezone
+	all_day?: boolean // Instead of _EventAllDay
+
+	// Venue - can be ID or object
+	venue?:
+		| number
+		| {
+				venue: string
+				address?: string
+				city?: string
+				state?: string
+				province?: string
+				zip?: string
+				country?: string
+				phone?: string
+				website?: string
+		  }
+
+	// Organizer - can be ID or object
+	organizer?:
+		| number
+		| {
+				organizer: string
+				phone?: string
+				website?: string
+				email?: string
+		  }
+
+	// Other event fields
+	url?: string // Instead of _EventURL
+	cost?: string // Instead of _EventCost
 	cost_details?: string
-	website?: string
-	categories?: number[]
-	tags?: number[]
+	currency_symbol?: string // Instead of _EventCurrencySymbol
+	currency_position?: 'prefix' | 'suffix' // Instead of _EventCurrencyPosition
+
+	// Display options
+	show_map?: boolean // Instead of _EventShowMap
+	show_map_link?: boolean // Instead of _EventShowMapLink
+	featured?: boolean
+
+	// Taxonomy
+	categories?: number[] // tribe_events_cat IDs
+	tags?: string[] | number[] // Can be tag names or IDs
+
+	// Media
 	featured_media?: number
+	image_url?: string
+	irrelevant?: boolean
+	relevance_reason?: string
+	_rawResponse?: string
 }
 
 export interface WordPressEvent {
@@ -97,8 +123,11 @@ export interface WordPressEvent {
 	status: string
 }
 
-export interface ApiResponse<T> {
+export interface ApiResponse<T = any> {
 	success: boolean
 	data?: T
 	error?: string
+	message?: string
+	eventId?: number
+	editUrl?: string
 }

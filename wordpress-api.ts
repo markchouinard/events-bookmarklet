@@ -1,7 +1,7 @@
 import dotenv from 'dotenv'
-import { MediaUploader } from './src/utils/MediaUploader.ts' // Add this import
-import FormData from 'form-data'
-import { Readable } from 'node:stream' // Fix: use node: prefix
+import { MediaUploader } from './src/utils/MediaUploader.ts'
+import { EventData, ApiResponse } from './src/types/wordpress.ts'
+import { getOrCreateTagIds } from './src/utils/tag-handler.ts'
 
 // Load environment variables
 dotenv.config()
@@ -70,97 +70,109 @@ interface WordPressEventPayload {
 }
 
 // Create an event in The Events Calendar
-export async function createEvent(eventData) {
+export async function createEvent(eventData: EventData): Promise<ApiResponse> {
 	try {
-		// Format dates properly for The Events Calendar
-		const startDate = new Date(eventData.start_time)
-		const endDate = eventData.end_time
-			? new Date(eventData.end_time)
-			: new Date(startDate.getTime() + 3600000) // Default to 1 hour if no end time
+		// First, let's see what data we're receiving
+		console.log('=== RECEIVED EVENT DATA ===')
+		console.log(JSON.stringify(eventData, null, 2))
 
-		// Improved date formatting for TEC - ensure we preserve timezone info
-		const formatDate = (date) => {
-			// Format as YYYY-MM-DD HH:MM:SS in local timezone
+		// Check for required fields
+		if (!eventData.title) {
+			throw new Error('Missing title')
+		}
+		if (!eventData.start_date) {
+			throw new Error('Missing start_date')
+		}
+
+		const startDate = new Date(eventData.start_date)
+		const endDate = eventData.end_date
+			? new Date(eventData.end_date)
+			: new Date(startDate.getTime() + 3600000)
+
+		// Check if dates are valid
+		if (isNaN(startDate.getTime())) {
+			throw new Error(`Invalid start_date: ${eventData.start_date}`)
+		}
+		if (isNaN(endDate.getTime())) {
+			throw new Error(`Invalid end_date: ${eventData.end_date}`)
+		}
+
+		console.log('=== PARSED DATES ===')
+		console.log('startDate:', startDate)
+		console.log('endDate:', endDate)
+
+		const formatDate = (date: Date): string => {
 			const year = date.getFullYear()
 			const month = String(date.getMonth() + 1).padStart(2, '0')
 			const day = String(date.getDate()).padStart(2, '0')
 			const hours = String(date.getHours()).padStart(2, '0')
 			const minutes = String(date.getMinutes()).padStart(2, '0')
 			const seconds = String(date.getSeconds()).padStart(2, '0')
-
 			return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 		}
 
-		console.log('Original start_time:', eventData.start_time)
-		console.log('Parsed startDate:', startDate)
-		console.log('Formatted start date:', formatDate(startDate))
-		console.log('Formatted end date:', formatDate(endDate))
+		// Handle venue - get or create venue ID
+		let venueId = 0
+		if (eventData.venue) {
+			if (typeof eventData.venue === 'string') {
+				venueId = await getOrCreateVenue(eventData.venue)
+			} else if (typeof eventData.venue === 'number') {
+				venueId = eventData.venue
+			}
+		}
 
 		// Enhance the description with source URL
-		let enhancedDescription = eventData.description || ''
-
-		// Add source URL at the end of description
-		if (eventData.source_url) {
-			const domain = getDomainFromUrl(eventData.source_url)
-			enhancedDescription += `\n\n<p><strong>Original Event:</strong> <a href="${eventData.source_url}" target="_blank" rel="noopener">View on ${domain}</a></p>`
+		let enhancedDescription = eventData.content || ''
+		if (eventData.url) {
+			const domain = getDomainFromUrl(eventData.url)
+			enhancedDescription += `\n\n<p><strong>Original Event:</strong> <a href="${eventData.url}" target="_blank" rel="noopener">View on ${domain}</a></p>`
 		}
 
-		// Map event data to The Events Calendar format
-		const eventPayload: WordPressEventPayload = {
+		// Process tags using the tag handler
+		let tagIds: number[] = []
+		if (eventData.tags && Array.isArray(eventData.tags)) {
+			console.log('Processing tags:', eventData.tags)
+			// Cast to the union type that our function accepts
+			tagIds = await getOrCreateTagIds(
+				eventData.tags as (string | number)[]
+			)
+			console.log('Tag IDs to use:', tagIds)
+		}
+
+		// Create the basic event payload without tags first
+		const eventPayload = {
 			title: eventData.title,
-			content: enhancedDescription,
-			status: 'draft', // Start with drafts for safety
+			description: enhancedDescription,
+			status: eventData.status || 'draft',
 
-			// Event dates - using meta fields for The Events Calendar
-			meta: {
-				_EventStartDate: formatDate(startDate),
-				_EventEndDate: formatDate(endDate),
-				_EventTimezone: 'America/Los_Angeles',
-				_EventAllDay: 'no', // Explicitly set to 'no' to ensure times are shown
-				_EventVenueID: 0, // Will be updated if we create a venue
-				_EventURL: eventData.source_url || '',
-				_EventCost: 'Free', // Default, modify as needed
-				_EventCurrencySymbol: '$',
-				_EventCurrencyPosition: 'prefix',
-				_EventShowMap: true,
-				_EventShowMapLink: true,
-			},
+			// Date fields (matching the API format)
+			start_date: formatDate(startDate),
+			end_date: formatDate(endDate),
+			all_day: eventData.all_day || false,
+			timezone: eventData.timezone || 'America/Los_Angeles',
+
+			// Other fields
+			website: eventData.url || '',
+			cost: eventData.cost || '',
+
+			// Venue (must be an ID)
+			venue: venueId,
+
+			// Display options
+			show_map: eventData.show_map !== false,
+			show_map_link: eventData.show_map_link !== false,
+			featured: eventData.featured || false,
+
+			// Categories and tags (arrays of IDs)
+			categories: eventData.categories || [],
+			tags: eventData.tags || [],
 		}
 
-		// Handle location/venue
-		if (eventData.location) {
-			// Either create a venue or look up an existing one
-			const venueId = await getOrCreateVenue(eventData.location)
-			if (venueId) {
-				eventPayload.meta._EventVenueID = venueId
-			}
-		}
+		console.log('=== MINIMAL PAYLOAD ===')
+		console.log(JSON.stringify(eventPayload, null, 2))
 
-		// Handle categories and tags
-		if (eventData.tags) {
-			// Convert tags to an array if it's a string
-			const tags = Array.isArray(eventData.tags)
-				? eventData.tags
-				: typeof eventData.tags === 'string'
-				? eventData.tags.split(',').map((t) => t.trim())
-				: []
-
-			// Add tags to the event
-			if (tags.length > 0) {
-				eventPayload.terms = {
-					tribe_events_cat: [], // Event categories
-					post_tag: tags, // Regular tags
-				}
-			}
-		}
-
-		console.log(
-			'Creating event in WordPress with payload:',
-			JSON.stringify(eventPayload, null, 2)
-		)
-
-		// Make the API request
-		const response = await fetch(`${WP_API_URL}/wp/v2/tribe_events`, {
+		// Use TEC REST API endpoint
+		const response = await fetch(`${WP_API_URL}/tribe/events/v1/events`, {
 			method: 'POST',
 			headers: {
 				Authorization: `Basic ${authString}`,
@@ -169,16 +181,55 @@ export async function createEvent(eventData) {
 			body: JSON.stringify(eventPayload),
 		})
 
+		console.log('=== RESPONSE ===')
+		console.log('Status:', response.status)
+		console.log('Status Text:', response.statusText)
+
+		// Read the response body ONCE
+		const responseText = await response.text()
+		console.log('Response Body:', responseText)
+
 		if (!response.ok) {
-			const errorText = await response.text()
-			throw new Error(
-				`WordPress API error: ${response.status} ${
-					response.statusText
-				} - ${errorText.substring(0, 200)}`
-			)
+			throw new Error(`API Error: ${response.status} - ${responseText}`)
 		}
 
-		const result = await response.json()
+		// Parse the response text (don't use response.json() after response.text())
+		let result
+		try {
+			result = JSON.parse(responseText)
+		} catch (parseError) {
+			throw new Error(`Failed to parse response: ${parseError.message}`)
+		}
+
+		// Now add tags to the created event if we have any
+		if (tagIds.length > 0 && result.id) {
+			try {
+				console.log(`Adding tags to event ${result.id}:`, tagIds)
+				const tagResponse = await fetch(
+					`${WP_API_URL}/wp/v2/tribe_events/${result.id}`,
+					{
+						method: 'POST',
+						headers: {
+							Authorization: `Basic ${authString}`,
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({
+							tags: tagIds,
+						}),
+					}
+				)
+
+				if (tagResponse.ok) {
+					console.log('✅ Tags added successfully')
+				} else {
+					const tagError = await tagResponse.text()
+					console.warn('Failed to add tags:', tagError)
+				}
+			} catch (tagError) {
+				console.error('Error adding tags:', tagError)
+				// Don't fail the whole event creation if tags fail
+			}
+		}
 
 		// Handle image if available
 		if (eventData.image_url && result.id) {
@@ -194,7 +245,7 @@ export async function createEvent(eventData) {
 			success: true,
 			message: 'Event created successfully',
 			eventId: result.id,
-			editUrl: result.link,
+			editUrl: result.url, // Note: using 'url' not 'link' based on API response
 		}
 	} catch (error) {
 		console.error('Error creating WordPress event:', error)

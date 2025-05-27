@@ -5,6 +5,7 @@ import dotenv from 'dotenv'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { checkApiConnection, createEvent } from './wordpress-api.ts'
+import { json } from 'stream/consumers'
 
 // Load environment variables
 dotenv.config()
@@ -60,115 +61,131 @@ const validateToken = (req, res, next) => {
 }
 
 // Routes
-app.post('/extract-event', validateToken, async (req, res) => {
-	try {
-		const { url, content, images } = req.body
+app.post('/extract-event', async (req, res) => {
+	const token = req.header('X-SacIT-Token')
+	if (token !== 'secret123')
+		return res.status(401).json({ error: 'Unauthorized' })
 
-		if (!url || !content) {
-			return res
-				.status(400)
-				.json({ error: 'URL and content are required' })
-		}
+	const { url, content, images } = req.body
 
-		console.log(`Extracting event data from: ${url}`)
-		console.log(`Content length: ${content.length} characters`)
-		console.log(`Images provided: ${images ? images.length : 0}`)
+	// Get current date for context
+	const currentDate = new Date()
+	const currentDateString = currentDate.toISOString().split('T')[0] // YYYY-MM-DD format
+	const currentDateTime = currentDate.toISOString() // Full ISO format
+	const currentYear = currentDate.getFullYear()
 
-		// Prepare the prompt for the LLM
-		const prompt = `
+	const prompt = `
 You are an assistant that extracts structured event data from webpages.
 
-RESPONSE FORMAT:
-You must respond with a valid JSON object only. No markdown code blocks, no explanations, just a plain JSON object.
+CURRENT DATE: ${currentDateString}
+CURRENT DATE/TIME: ${currentDateTime}
+CURRENT YEAR: ${currentYear}
 
-Given the raw text, URL, and available images of an event page, return a JSON object with:
+Given the raw text and URL of an event page, return ONLY a valid JSON object (no markdown formatting, no code blocks) with:
 - title
-- description
-- start_time (ISO format)
-- end_time (if available)
-- location
-- source_url
-- tags (short keywords)
-- image_url (select the most appropriate image URL that represents this event)
+- content (description of the event)
+- start_date (ISO format, e.g., "2024-07-02T18:00:00" - use current year ${currentYear} if year is not specified)
+- end_date (ISO format, if available - if only start time given, estimate reasonable end time)
+- timezone (if detectable, e.g., "America/Los_Angeles", default to "America/Los_Angeles" for California events)
+- all_day (boolean, true if it's an all-day event)
+- venue (location/venue name as string)
+- url (the source URL provided)
+- cost (e.g., "Free", "$25", etc.)
+- tags (array of short keywords)
 
-If the event isn't relevant to tech, professional networking, or IT in California, return:
-{
-	"irrelevant": true,
-	"relevance_score": 0-100,
-	"relevance_reason": "Brief explanation why this event isn't relevant"
-}
+IMPORTANT DATE PARSING RULES:
+- If you see relative dates like "tomorrow", "next week", "this Friday", calculate from current date: ${currentDateString}
+- If you see dates without year, assume current year: ${currentYear}
+- If you see times like "6 PM" or "18:00", convert to full ISO format
+- If no end time is specified, estimate a reasonable duration (typically 1-3 hours for most events)
+- For California events, use "America/Los_Angeles" timezone
 
-IMPORTANT INSTRUCTIONS FOR RELEVANCE:
-- Tech events include: software development, IT, data science, AI/ML, cybersecurity, tech conferences
-- Professional networking includes: career fairs, industry meetups, professional development
-- California focus: prioritize events in California, especially Northern California and Sacramento area
-- Score relevance from 0-100, with 75+ being highly relevant
-- Provide clear reasoning for irrelevant events
+If the event isn't relevant to tech, professional networking, or IT in California, return: { "irrelevant": true }
+
+Return only the JSON object, no other text or formatting.
 
 URL: ${url}
 
-IMAGES: ${images ? JSON.stringify(images.slice(0, 5)) : 'No images available'}
-
 TEXT:
 ${content.slice(0, 3000)}
-`.trim()
+  `.trim()
 
-		// Call OpenAI API with the new v4 syntax
-		const completion = await openai.chat.completions.create({
-			model: 'gpt-4-turbo-preview', // or "gpt-3.5-turbo" for a less expensive option
-			messages: [
-				{
-					role: 'system',
-					content:
-						'You are an event extraction assistant that returns ONLY valid JSON data with no other text or formatting.',
-				},
-				{
-					role: 'user',
-					content: prompt,
-				},
-			],
-			temperature: 0.1,
-			response_format: { type: 'json_object' }, // This ensures JSON response on supported models
+	try {
+		// Get event data from OpenAI
+		const response = await openai.chat.completions.create({
+			model: 'gpt-4o',
+			messages: [{ role: 'user', content: prompt }],
+			temperature: 0.3,
 		})
 
-		const result = completion.choices[0].message.content
+		const result = response.choices[0].message.content
+		console.log('🔍 Extracted event:', result)
 
-		// Validate and clean the result
-		let cleanedResult = result
-
-		// Remove any markdown code block markers if present
-		if (result.includes('')) {
-			cleanedResult = result.replace(/json\n|\n/g, '')
-			console.log('Cleaned markdown JSON code blocks from response')
-		} else if (result.includes('')) {
-			cleanedResult = result.replace(/\n|\n/g, '')
-			console.log('Cleaned markdown code blocks from response')
-		}
-
-		// Log the cleaned result for debugging
-		console.log('Cleaned result:', cleanedResult.substring(0, 100) + '...')
-
-		// Try to parse it to ensure it's valid JSON
+		// Parse the result
+		let eventData
 		try {
-			JSON.parse(cleanedResult)
-			console.log('Response is valid JSON')
-		} catch (e) {
-			console.error('Invalid JSON in response:', e)
+			let jsonString = result.trim()
+
+			console.log('Raw OpenAI response length:', jsonString.length)
+			console.log('First 50 chars:', jsonString.substring(0, 50))
+			console.log(
+				'Last 50 chars:',
+				jsonString.substring(jsonString.length - 50)
+			)
+
+			// More aggressive cleaning of markdown code blocks
+			if (jsonString.includes('```')) {
+				// Find the first { and last }
+				const firstBrace = jsonString.indexOf('{')
+				const lastBrace = jsonString.lastIndexOf('}')
+
+				if (
+					firstBrace !== -1 &&
+					lastBrace !== -1 &&
+					lastBrace > firstBrace
+				) {
+					jsonString = jsonString.substring(firstBrace, lastBrace + 1)
+					console.log(
+						'Extracted JSON between braces:',
+						jsonString.substring(0, 100) + '...'
+					)
+				} else {
+					throw new Error(
+						'Could not find valid JSON braces in response'
+					)
+				}
+			}
+
+			console.log('Final JSON string length:', jsonString.length)
+			eventData = JSON.parse(jsonString)
+			console.log('✅ Parsed event data successfully')
+		} catch (parseError) {
+			console.error('Error parsing OpenAI response:', parseError)
 			console.error('Raw response:', result)
 			return res.status(500).json({
-				error: 'Invalid JSON response from LLM',
-				raw_result: result,
+				error: 'Failed to parse event data',
+				details: parseError.message,
 			})
 		}
 
-		console.log('LLM Response processed successfully')
-		return res.json({ result: cleanedResult })
-	} catch (error) {
-		console.error('Error processing request:', error)
-		return res.status(500).json({
-			error: 'Failed to process event',
-			details: error.message,
+		// If event is irrelevant, return early
+		if (eventData && eventData.irrelevant) {
+			return res.json({ result: eventData })
+		}
+
+		// Add image URL if available
+		if (images && images.length > 0) {
+			eventData.image_url = images[0].url
+		}
+
+		// ONLY return the extracted data - don't create WordPress event yet
+		res.json({
+			result: eventData,
+			// No wordpress creation here
 		})
+	} catch (err) {
+		console.error('❌ Error:', err)
+		res.status(500).json({ error: 'Event extraction failed.' })
 	}
 })
 
@@ -177,7 +194,7 @@ app.post('/submit-to-wordpress', validateToken, async (req, res) => {
 	try {
 		const { eventData } = req.body
 
-		if (!eventData || !eventData.title || !eventData.start_time) {
+		if (!eventData || !eventData.title || !eventData.start_date) {
 			return res.status(400).json({
 				success: false,
 				message: 'Missing required event data',
