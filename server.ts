@@ -4,7 +4,7 @@ import OpenAI from 'openai'
 import dotenv from 'dotenv'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { checkApiConnection, createEvent } from './wordpress-api.js'
+import { checkApiConnection, createEvent } from './wordpress-api.ts'
 
 // Load environment variables
 dotenv.config()
