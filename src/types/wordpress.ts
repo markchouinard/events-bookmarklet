@@ -1,3 +1,12 @@
+export interface UploadOptions {
+	filename?: string
+	title?: string
+	caption?: string
+	description?: string
+	alt_text?: string
+	contentType?: string
+}
+
 export interface WordPressMediaObject {
 	id: number
 	date: string
@@ -29,22 +38,21 @@ export interface WordPressMediaObject {
 	media_type: string
 	mime_type: string
 	media_details: {
-		width: number
-		height: number
+		width?: number
+		height?: number
 		file: string
-		sizes: Record<string, any>
+		sizes?: {
+			[key: string]: {
+				file: string
+				width: number
+				height: number
+				mime_type: string
+				source_url: string
+			}
+		}
+		image_meta?: any
 	}
-	post: number | null
 	source_url: string
-}
-
-export type UploadOptions = {
-	filename?: string
-	title?: string
-	caption?: string
-	description?: string
-	alt_text?: string
-	contentType?: string
 }
 
 export interface EventData {

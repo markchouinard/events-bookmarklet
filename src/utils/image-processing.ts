@@ -1,5 +1,5 @@
 import sharp from 'sharp'
-import { MediaUploader } from '../MediaUploader'
+import { MediaUploader } from './MediaUploader'
 
 class ImageProcessor {
 	private uploader: MediaUploader
