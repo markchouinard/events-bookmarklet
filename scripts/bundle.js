@@ -15,7 +15,7 @@ switch (environment) {
 	case 'production':
 		apiUrl = process.env.VERCEL_URL
 			? `https://${process.env.VERCEL_URL}/extract-event`
-			: 'https://your-app-name.vercel.app/extract-event'
+			: 'https://events-bookmarklet.vercel.app/extract-event'
 		break
 	case 'staging':
 		apiUrl = 'https://stage.sacitcentral.com/extract-event'
