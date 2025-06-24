@@ -1,7 +1,13 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import { createEvent } from '../wordpress-api'
+import { handleCors } from '../lib/cors'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+	// Handle CORS
+	if (handleCors(req, res)) {
+		return // OPTIONS request was handled
+	}
+
 	if (req.method !== 'POST') {
 		return res.status(405).json({ error: 'Method not allowed' })
 	}

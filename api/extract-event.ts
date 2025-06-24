@@ -1,11 +1,17 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import OpenAI from 'openai'
+import { handleCors } from '../lib/cors'
 
 const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
 })
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+	// Handle CORS
+	if (handleCors(req, res)) {
+		return // OPTIONS request was handled
+	}
+
 	if (req.method !== 'POST') {
 		return res.status(405).json({ error: 'Method not allowed' })
 	}

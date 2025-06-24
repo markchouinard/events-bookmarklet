@@ -31,7 +31,14 @@ import { showEnvironmentBadge } from './utils/UIUtils'
 		console.log('[SacIT] Image details:', images)
 
 		// Extract event data
-		extractEventData(url, content, images)
+		fetch(apiUrl, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-SacIT-Token': 'secret123', // Make sure this header name matches
+			},
+			body: JSON.stringify(payload),
+		})
 			.then((data) => {
 				console.log('[SacIT] Event extraction successful:', data)
 
