@@ -11,10 +11,10 @@
 		"build:prod": "NODE_ENV=production node scripts/bundle.js",
 		"minify": "terser dist/bookmarklet.js -c -m -o dist/bookmarklet.min.js",
 		"test-import": "tsx test-import.ts",
-		"server": "tsx server.ts",
-		"start": "node scripts/bundle.js && node server.ts",
-		"start:staging": "NODE_ENV=staging npm run build:staging && NODE_ENV=staging node server.ts",
-		"start:prod": "NODE_ENV=production npm run build:prod && NODE_ENV=production node server.ts"
+		"server": "NODE_TLS_REJECT_UNAUTHORIZED=0 tsx server.ts",
+		"start": "node scripts/bundle.js && NODE_TLS_REJECT_UNAUTHORIZED=0 tsx server.ts",
+		"start:staging": "NODE_ENV=staging npm run build:staging && NODE_ENV=staging NODE_TLS_REJECT_UNAUTHORIZED=0 tsx server.ts",
+		"start:prod": "NODE_ENV=production npm run build:prod && NODE_ENV=production NODE_TLS_REJECT_UNAUTHORIZED=0 tsx server.ts"
 	},
 	"keywords": [],
 	"author": "",
