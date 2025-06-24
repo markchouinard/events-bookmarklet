@@ -1,16 +1,5 @@
 {
 	"version": 2,
-	"builds": [
-		{
-			"src": "package.json",
-			"use": "@vercel/node"
-		}
-	],
-	"functions": {
-		"api/**/*.ts": {
-			"runtime": "nodejs18.x"
-		}
-	},
 	"rewrites": [
 		{
 			"source": "/extract-event",
