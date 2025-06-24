@@ -1,5 +1,6 @@
 // Event dialog component
 import { EventData } from '../types'
+import { addWordPressSubmitButton } from './WordPressSubmit'
 
 export const showEventResult = (eventData: EventData): void => {
 	// Remove any existing dialogs
@@ -128,6 +129,9 @@ export const showEventResult = (eventData: EventData): void => {
 		document.body.removeChild(dialog)
 	}
 	dialog.appendChild(closeButton)
+
+	// Add WordPress submit button before the close button
+	addWordPressSubmitButton(dialog, eventData)
 
 	// Add "View Raw Data" button for debugging
 	if (eventData._rawResponse) {

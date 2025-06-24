@@ -1,7 +1,8 @@
 // API interaction
 import { EventData, ImageInfo } from '../types'
 
-export const API_URL = 'http://localhost:3000/extract-event'
+// This will be replaced during the build process based on environment
+export const API_URL = '__API_URL_PLACEHOLDER__'
 
 export const extractEventData = async (
 	url: string,
