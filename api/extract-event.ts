@@ -1,15 +1,20 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import OpenAI from 'openai'
-import { handleCors } from '../lib/cors'
 
 const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
 })
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-	// Handle CORS
-	if (handleCors(req, res)) {
-		return // OPTIONS request was handled
+	// Add CORS headers FIRST - before any other logic
+	res.setHeader('Access-Control-Allow-Origin', '*')
+	res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+	res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-SacIT-Token')
+	res.setHeader('Access-Control-Max-Age', '86400')
+
+	// Handle preflight OPTIONS request
+	if (req.method === 'OPTIONS') {
+		return res.status(200).end()
 	}
 
 	if (req.method !== 'POST') {
