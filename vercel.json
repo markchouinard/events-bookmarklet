@@ -1,0 +1,33 @@
+{
+	"version": 2,
+	"builds": [
+		{
+			"src": "package.json",
+			"use": "@vercel/node"
+		}
+	],
+	"functions": {
+		"api/**/*.ts": {
+			"runtime": "nodejs18.x"
+		}
+	},
+	"rewrites": [
+		{
+			"source": "/extract-event",
+			"destination": "/api/extract-event"
+		},
+		{
+			"source": "/submit-to-wordpress",
+			"destination": "/api/submit-to-wordpress"
+		},
+		{
+			"source": "/test-wordpress",
+			"destination": "/api/test-wordpress"
+		},
+		{
+			"source": "/check-events-api",
+			"destination": "/api/check-events-api"
+		}
+	],
+	"outputDirectory": "dist"
+}
