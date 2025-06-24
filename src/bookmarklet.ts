@@ -9,15 +9,21 @@ import { EventData } from './types'
 
 // Main functionality
 import { showEnvironmentBadge } from './utils/UIUtils'
-;(function () {
+;(async function () {
 	try {
 		// Ensure environment badge is visible
 		showEnvironmentBadge()
 		const url = window.location.href
 		const content = document.body.innerText.slice(0, 10000)
 
-		// Extract images
-		const images = extractImages()
+		// Extract images - AWAIT the promise
+		const images = await extractImages()
+
+		const payload = {
+			url: url,
+			content: content,
+			images: images,
+		}
 
 		// Show initial notification
 		const loadingNotification = showNotification(
@@ -31,7 +37,7 @@ import { showEnvironmentBadge } from './utils/UIUtils'
 		console.log('[SacIT] Image details:', images)
 
 		// Extract event data
-		fetch(apiUrl, {
+		fetch('__API_URL_PLACEHOLDER__', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -39,6 +45,7 @@ import { showEnvironmentBadge } from './utils/UIUtils'
 			},
 			body: JSON.stringify(payload),
 		})
+			.then((response) => response.json())
 			.then((data) => {
 				console.log('[SacIT] Event extraction successful:', data)
 
