@@ -18,5 +18,10 @@
 			"destination": "/api/check-events-api"
 		}
 	],
-	"outputDirectory": "dist"
+	"outputDirectory": "dist",
+	"functions": {
+		"api/*.ts": {
+			"includeFiles": "dist/**"
+		}
+	}
 }

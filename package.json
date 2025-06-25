@@ -5,9 +5,13 @@
 	"main": "index.js",
 	"type": "module",
 	"scripts": {
-		"build": "NODE_ENV=development node scripts/bundle.js",
-		"build:prod": "NODE_ENV=production node scripts/bundle.js",
-		"start": "node scripts/bundle.js"
+		"build:ts": "tsc",
+		"build": "node scripts/bundle.js && node scripts/create-full-script.js && node scripts/create-loader.js",
+		"build:staging": "NODE_ENV=staging node scripts/bundle.js && NODE_ENV=staging node scripts/create-full-script.js && NODE_ENV=staging node scripts/create-loader.js",
+		"build:prod": "NODE_ENV=production node scripts/bundle.js && NODE_ENV=production node scripts/create-full-script.js && NODE_ENV=production node scripts/create-loader.js",
+		"vercel-build": "npm run build:prod",
+		"server:local": "NODE_TLS_REJECT_UNAUTHORIZED=0 tsx server.ts",
+		"start:local": "node scripts/bundle.js && NODE_TLS_REJECT_UNAUTHORIZED=0 tsx server.ts"
 	},
 	"keywords": [],
 	"author": "",
