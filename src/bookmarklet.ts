@@ -1,12 +1,5 @@
-import * as Sentry from '@sentry/browser'
-
-// ✅ REAL SENTRY INIT - FIRST THING
-Sentry.init({
-	dsn: 'https://d0218b8c4606d5f2a3480ad10db9ed67@o4507068179349504.ingest.us.sentry.io/4507588915691521',
-	environment: '__ENVIRONMENT_PLACEHOLDER__',
-	sendDefaultPii: true,
-	tracesSampleRate: 1.0,
-})
+// ✅ NO SENTRY IMPORT - Keep bookmarklet small
+// import * as Sentry from '@sentry/browser'  // ← Remove this
 
 // Main bookmarklet entry point
 import { showNotification } from './components/Notifications'
@@ -21,14 +14,6 @@ import { showEnvironmentBadge } from './utils/UIUtils'
 // ✅ KEEP ORIGINAL STRUCTURE - Just add Sentry context and error capture
 ;(function () {
 	try {
-		// ✅ SET SENTRY CONTEXT
-		Sentry.setContext('page', {
-			url: window.location.href,
-			title: document.title,
-			domain: window.location.hostname,
-		})
-		Sentry.setTag('source', 'bookmarklet')
-
 		// Ensure environment badge is visible
 		showEnvironmentBadge()
 		const url = window.location.href
@@ -102,17 +87,6 @@ import { showEnvironmentBadge } from './utils/UIUtils'
 				}, 100)
 			})
 			.catch((err) => {
-				// ✅ CAPTURE API ERRORS IN SENTRY
-				Sentry.captureException(err, {
-					tags: {
-						source: 'bookmarklet-api-call',
-						url: window.location.href,
-					},
-					extra: {
-						payload: payload,
-					},
-				})
-
 				console.error('[SacIT] Fetch error:', err)
 				const errorMessage =
 					err instanceof Error ? err.message : String(err)
@@ -123,14 +97,6 @@ import { showEnvironmentBadge } from './utils/UIUtils'
 				)
 			})
 	} catch (err) {
-		// ✅ CAPTURE CRITICAL ERRORS IN SENTRY
-		Sentry.captureException(err, {
-			tags: {
-				source: 'bookmarklet-critical',
-				url: window.location.href,
-			},
-		})
-
 		console.error('[SacIT] Critical error:', err)
 		const errorMessage = err instanceof Error ? err.message : String(err)
 		showNotification('Critical error', 'error', errorMessage)
