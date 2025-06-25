@@ -19,7 +19,7 @@
 	"packageManager": "pnpm@10.11.0",
 	"dependencies": {
 		"@sentry/browser": "^9.22.0",
-		"@sentry/react": "^9.31.0",
+		"@sentry/node": "^9.31.0",
 		"body-parser": "^2.2.0",
 		"cors": "^2.8.5",
 		"dotenv": "^16.5.0",
