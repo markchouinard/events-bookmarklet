@@ -57,26 +57,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		const auth = Buffer.from(`${username}:${appPassword}`).toString(
 			'base64'
 		)
-		const wpEndpoint = `${wpApiUrl}/wp/v2/tribe_events`
+		const wpEndpoint = `${wpApiUrl}/tribe/events/v1/events`
 
 		console.log('🎯 WordPress endpoint:', wpEndpoint)
 
 		const requestBody = {
 			title: eventData.title,
-			content: `${eventData.content || ''}
-
-**Event Details:**
-- Start Date: ${eventData.start_date}
-- End Date: ${eventData.end_date || eventData.start_date}
-- Venue: ${eventData.venue || 'TBD'}
-- Cost: ${eventData.cost || 'Free'}
-- Source: ${eventData.url || ''}
-			`.trim(),
+			description: eventData.content || eventData.description || '',
+			start_date: eventData.start_date, // Direct field, not meta!
+			end_date: eventData.end_date || eventData.start_date,
+			timezone: eventData.timezone || 'America/Los_Angeles',
+			all_day: eventData.all_day || false,
+			cost: eventData.cost || '',
+			website: eventData.url || '',
+			image: eventData.image_url || '',
+			show_map: true,
+			show_map_link: true,
+			featured: false,
 			status: 'draft',
-			meta: {
-				_tribe_events_status: '',
-				_tribe_events_status_reason: '',
-			},
+
+			// Handle tags and categories if you have them
+			tags: eventData.tags
+				? eventData.tags.map((tag) => ({ name: tag }))
+				: [],
+
+			// Handle venue - you'll need to create venues first or use existing IDs
+			// For now, put venue info in description
 		}
 
 		console.log('📝 Request body:', JSON.stringify(requestBody, null, 2))
