@@ -68,15 +68,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			},
 			body: JSON.stringify({
 				title: eventData.title,
-				content: eventData.content || '',
-				status: 'draft', // Start as draft for review
+				status: 'draft',
+				// Start with minimal meta fields that work
 				meta: {
-					_EventStartDate: eventData.start_date,
-					_EventEndDate: eventData.end_date || eventData.start_date,
-					_EventVenueID: eventData.venue || '',
-					_EventCost: eventData.cost || 'Free',
-					_EventURL: eventData.url || '',
+					_tribe_events_status: '',
+					_tribe_events_status_reason: '',
+					// Add event details in the content for now
 				},
+				// Add event details to the content
+				content: `${eventData.content || ''}
+
+**Event Details:**
+- Start Date: ${eventData.start_date}
+- End Date: ${eventData.end_date || eventData.start_date}
+- Venue: ${eventData.venue || 'TBD'}
+- Cost: ${eventData.cost || 'Free'}
+- Source: ${eventData.url || ''}
+        `.trim(),
 			}),
 		})
 
