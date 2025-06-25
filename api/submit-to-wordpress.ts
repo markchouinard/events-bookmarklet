@@ -192,15 +192,43 @@ async function getOrCreateVenue(
 		// Create new venue
 		console.log(`🆕 Creating new venue: ${locationName}`)
 
+		// Parse location for more details if possible
+		let venueAddress = ''
+		let venueCity = ''
+		let venueState = ''
+		let venueZip = ''
+		let venueCountry = 'United States'
+
+		// Very basic location parsing - improve this based on your location formats
+		if (locationName.includes(',')) {
+			const parts = locationName.split(',').map((p) => p.trim())
+			if (parts.length >= 2) {
+				venueAddress = parts[0]
+				venueCity = parts[1]
+
+				// Try to extract state and zip
+				if (parts.length >= 3) {
+					// Check for state + zip format
+					const stateZipMatch = parts[2].match(/([A-Z]{2})\s+(\d{5})/)
+					if (stateZipMatch) {
+						venueState = stateZipMatch[1]
+						venueZip = stateZipMatch[2]
+					} else {
+						venueState = parts[2]
+					}
+				}
+			}
+		}
+
 		const venuePayload = {
 			title: locationName,
 			status: 'publish',
 			meta: {
-				_VenueAddress: '',
-				_VenueCity: '',
-				_VenueStateProvince: '',
-				_VenueZip: '',
-				_VenueCountry: 'United States',
+				_VenueAddress: venueAddress,
+				_VenueCity: venueCity,
+				_VenueStateProvince: venueState,
+				_VenueZip: venueZip,
+				_VenueCountry: venueCountry,
 				_VenuePhone: '',
 				_VenueURL: '',
 				_VenueShowMap: true,
@@ -218,7 +246,10 @@ async function getOrCreateVenue(
 		})
 
 		if (!createResponse.ok) {
-			console.error(`❌ Failed to create venue: ${createResponse.status}`)
+			const errorText = await createResponse.text()
+			console.error(
+				`❌ Failed to create venue: ${createResponse.status} - ${errorText}`
+			)
 			return 0
 		}
 
