@@ -11,6 +11,9 @@ importers:
       '@sentry/browser':
         specifier: ^9.22.0
         version: 9.22.0
+      '@sentry/react':
+        specifier: ^9.31.0
+        version: 9.31.0(react@19.1.0)
       body-parser:
         specifier: ^2.2.0
         version: 2.2.0
@@ -436,25 +439,55 @@ packages:
     resolution: {integrity: sha512-Ou1tBnVxFAIn8i9gvrWzRotNJQYiu3awNXpsFCw6qFwmiKAVPa6b13vCdolhXnrIiuR77jY1LQnKh9hXpoRzsg==}
     engines: {node: '>=18'}
 
+  '@sentry-internal/browser-utils@9.31.0':
+    resolution: {integrity: sha512-rviu/jUmeQbY4rSO8l4pubOtRIhFtH5Gu/ryRNMTlpJRdomp4uxddqthHUDH5g6xCXZsMTyJEIdx0aTqbgr/GQ==}
+    engines: {node: '>=18'}
+
   '@sentry-internal/feedback@9.22.0':
     resolution: {integrity: sha512-zgMVkoC61fgi41zLcSZA59vOtKxcLrKBo1ECYhPD1hxEaneNqY5fhXDwlQBw96P5l2yqkgfX6YZtSdU4ejI9yA==}
+    engines: {node: '>=18'}
+
+  '@sentry-internal/feedback@9.31.0':
+    resolution: {integrity: sha512-Ygi/8UZ7p2B4DhXQjZDtOc45vNUHkfk2XETBTBGkByEQkE8vygzSiKhgRcnVpzwq+8xKFMRy+PxvpcCo+PNQew==}
     engines: {node: '>=18'}
 
   '@sentry-internal/replay-canvas@9.22.0':
     resolution: {integrity: sha512-EcG9IMSEalFe49kowBTJObWjof/iHteDwpyuAszsFDdQUYATrVUtwpwN7o52vDYWJud4arhjrQnMamIGxa79eQ==}
     engines: {node: '>=18'}
 
+  '@sentry-internal/replay-canvas@9.31.0':
+    resolution: {integrity: sha512-VGqfvQCIuXQZeecrBf8bd4sj8lYGzUA/2CffTAkad1nB1Onyz0Kzo54qLWemivCxA3ufHf6DCpNA3Loa/0ywFQ==}
+    engines: {node: '>=18'}
+
   '@sentry-internal/replay@9.22.0':
     resolution: {integrity: sha512-9GOycoKbrclcRXfcbNV8svbmAsOS5R4wXBQmKF4pFLkmFA/lJv9kdZSNYkRvkrxdNfbMIJXP+DV9EqTZcryXig==}
+    engines: {node: '>=18'}
+
+  '@sentry-internal/replay@9.31.0':
+    resolution: {integrity: sha512-V5rvcO/xSj8JMw4ZnZT2cBYC+UOuIiZ2Flj4EoIurxMrTgowE1uMXUBA32EBfuB5/vQSJXB6W5uAudhk7LjBPQ==}
     engines: {node: '>=18'}
 
   '@sentry/browser@9.22.0':
     resolution: {integrity: sha512-3TeRm74dvX0JdjX0AgkQa+22iUHwHnY+Q6M05NZ+tDeCNHGK/mEBTeqquS1oQX67jWyuvYmG3VV6RJUxtG9Paw==}
     engines: {node: '>=18'}
 
+  '@sentry/browser@9.31.0':
+    resolution: {integrity: sha512-DzG72JJTqHzE0Qo2fHeHm3xgFs97InaSQStmTMxOA59yPqvAXbweNPcsgCNu1q76+jZyaJcoy1qOwahnLuEVDg==}
+    engines: {node: '>=18'}
+
   '@sentry/core@9.22.0':
     resolution: {integrity: sha512-ixvtKmPF42Y6ckGUbFlB54OWI75H2gO5UYHojO6eXFpS7xO3ZGgV/QH6wb40mWK+0w5XZ0233FuU9VpsuE6mKA==}
     engines: {node: '>=18'}
+
+  '@sentry/core@9.31.0':
+    resolution: {integrity: sha512-6JeoPGvBgT9m2YFIf2CrW+KrrOYzUqb9+Xwr/Dw25kPjVKy+WJjWqK8DKCNLgkBA22OCmSOmHuRwFR0YxGVdZQ==}
+    engines: {node: '>=18'}
+
+  '@sentry/react@9.31.0':
+    resolution: {integrity: sha512-cZT/AwRiawRED7pB4Ug6ZRbcWd92HQxOPc12KKe5ZUQFEc9jUqH6HqwzQUSMzkg86NrE9Hc6XXga+JZ3Q1Lzow==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      react: ^16.14.0 || 17.x || 18.x || 19.x
 
   '@ts-morph/common@0.11.1':
     resolution: {integrity: sha512-7hWZS0NRpEsNV8vWJzg7FEz6V8MaLNeJOmwmghqUXTpzk16V1LLZhdo+4QvE/+zv4cVci0OviuJFnqhEfoV3+g==}
@@ -1205,6 +1238,9 @@ packages:
     resolution: {integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==}
     engines: {node: '>= 0.4'}
 
+  hoist-non-react-statics@3.3.2:
+    resolution: {integrity: sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw==}
+
   http-errors@2.0.0:
     resolution: {integrity: sha512-FtwrG/euBzaEjYeRqOgly7G0qviiXoJWnvEH2Z1plBdXgbyjv34pHTSb9zoeHMyDy33+DWy5Wt9Wo+TURtOYSQ==}
     engines: {node: '>= 0.8'}
@@ -1567,6 +1603,13 @@ packages:
   raw-body@3.0.0:
     resolution: {integrity: sha512-RmkhL8CAyCRPXCE28MMH0z2PNWQBNk2Q09ZdxM9IOOXwxwZbN+qbWaatPkdkWIKL2ZVDImrN/pK5HTRz2PcS4g==}
     engines: {node: '>= 0.8'}
+
+  react-is@16.13.1:
+    resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
+
+  react@19.1.0:
+    resolution: {integrity: sha512-FS+XFBNvn3GTAWq26joslQgWNoFu08F4kl0J4CgdNKADkdSGXQyTCnKteIAJy96Br6YbpEU1LSzV5dYtjMkMDg==}
+    engines: {node: '>=0.10.0'}
 
   readdirp@3.6.0:
     resolution: {integrity: sha512-hOS089on8RduqdbhvQ5Z37A0ESjsqz6qnRcffsMU3495FuTdqSm+7bhJ29JvIOsBDEEnan5DPu9t3To9VRlMzA==}
@@ -2198,19 +2241,37 @@ snapshots:
     dependencies:
       '@sentry/core': 9.22.0
 
+  '@sentry-internal/browser-utils@9.31.0':
+    dependencies:
+      '@sentry/core': 9.31.0
+
   '@sentry-internal/feedback@9.22.0':
     dependencies:
       '@sentry/core': 9.22.0
+
+  '@sentry-internal/feedback@9.31.0':
+    dependencies:
+      '@sentry/core': 9.31.0
 
   '@sentry-internal/replay-canvas@9.22.0':
     dependencies:
       '@sentry-internal/replay': 9.22.0
       '@sentry/core': 9.22.0
 
+  '@sentry-internal/replay-canvas@9.31.0':
+    dependencies:
+      '@sentry-internal/replay': 9.31.0
+      '@sentry/core': 9.31.0
+
   '@sentry-internal/replay@9.22.0':
     dependencies:
       '@sentry-internal/browser-utils': 9.22.0
       '@sentry/core': 9.22.0
+
+  '@sentry-internal/replay@9.31.0':
+    dependencies:
+      '@sentry-internal/browser-utils': 9.31.0
+      '@sentry/core': 9.31.0
 
   '@sentry/browser@9.22.0':
     dependencies:
@@ -2220,7 +2281,24 @@ snapshots:
       '@sentry-internal/replay-canvas': 9.22.0
       '@sentry/core': 9.22.0
 
+  '@sentry/browser@9.31.0':
+    dependencies:
+      '@sentry-internal/browser-utils': 9.31.0
+      '@sentry-internal/feedback': 9.31.0
+      '@sentry-internal/replay': 9.31.0
+      '@sentry-internal/replay-canvas': 9.31.0
+      '@sentry/core': 9.31.0
+
   '@sentry/core@9.22.0': {}
+
+  '@sentry/core@9.31.0': {}
+
+  '@sentry/react@9.31.0(react@19.1.0)':
+    dependencies:
+      '@sentry/browser': 9.31.0
+      '@sentry/core': 9.31.0
+      hoist-non-react-statics: 3.3.2
+      react: 19.1.0
 
   '@ts-morph/common@0.11.1':
     dependencies:
@@ -3015,6 +3093,10 @@ snapshots:
     dependencies:
       function-bind: 1.1.2
 
+  hoist-non-react-statics@3.3.2:
+    dependencies:
+      react-is: 16.13.1
+
   http-errors@2.0.0:
     dependencies:
       depd: 2.0.0
@@ -3308,6 +3390,10 @@ snapshots:
       http-errors: 2.0.0
       iconv-lite: 0.6.3
       unpipe: 1.0.0
+
+  react-is@16.13.1: {}
+
+  react@19.1.0: {}
 
   readdirp@3.6.0:
     dependencies:

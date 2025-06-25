@@ -1,196 +1,243 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
+import * as Sentry from '@sentry/node'
+
+// ✅ REAL SENTRY INIT
+Sentry.init({
+	dsn: 'https://d0218b8c4606d5f2a3480ad10db9ed67@o4507068179349504.ingest.us.sentry.io/4507588915691521',
+	environment: process.env.NODE_ENV || 'development',
+	sendDefaultPii: true,
+	tracesSampleRate: 1.0,
+})
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-	// Add CORS headers FIRST
-	res.setHeader('Access-Control-Allow-Origin', '*')
-	res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-	res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-SacIT-Token')
-	res.setHeader('Access-Control-Max-Age', '86400')
+	return Sentry.withScope(async (scope) => {
+		scope.setTag('function', 'submit-to-wordpress')
+		scope.setUser({
+			id: 'bookmarklet-user',
+		})
+		scope.setContext('event', {
+			title: req.body?.eventData?.title,
+			startDate: req.body?.eventData?.start_date,
+			venue: req.body?.eventData?.venue,
+		})
 
-	if (req.method === 'OPTIONS') {
-		return res.status(200).end()
-	}
-
-	if (req.method !== 'POST') {
-		return res.status(405).json({ error: 'Method not allowed' })
-	}
-
-	// Token validation
-	const token = req.headers['x-sacit-token']
-	if (token !== 'secret123') {
-		return res.status(401).json({ error: 'Unauthorized' })
-	}
-
-	try {
-		console.log('🚀 Starting WordPress submission...')
-
-		const { eventData } = req.body
-
-		// ✅ MATCH LOCAL VERSION - Detailed logging
-		console.log('=== RECEIVED EVENT DATA ===')
-		console.log(JSON.stringify(eventData, null, 2))
-
-		// ✅ MATCH LOCAL VERSION - Individual field validation
-		if (!eventData) {
-			throw new Error('Missing eventData')
-		}
-		if (!eventData.title) {
-			throw new Error('Missing title')
-		}
-		if (!eventData.start_date) {
-			throw new Error('Missing start_date')
-		}
-
-		// ✅ ADD DATE PROCESSING - Match local version exactly
-		const startDate = new Date(eventData.start_date)
-		const endDate = eventData.end_date
-			? new Date(eventData.end_date)
-			: new Date(startDate.getTime() + 3600000) // Add 1 hour if no end date
-
-		// Check if dates are valid
-		if (isNaN(startDate.getTime())) {
-			throw new Error(`Invalid start_date: ${eventData.start_date}`)
-		}
-		if (isNaN(endDate.getTime())) {
-			throw new Error(`Invalid end_date: ${eventData.end_date}`)
-		}
-
-		console.log('=== PARSED DATES ===')
-		console.log('startDate:', startDate)
-		console.log('endDate:', endDate)
-
-		// WordPress API configuration
-		const wpApiUrl = process.env.WP_API_URL
-		const username = process.env.WP_USERNAME
-		const appPassword = process.env.WP_APP_PASSWORD
-		const auth = Buffer.from(`${username}:${appPassword}`).toString(
-			'base64'
+		// Add CORS headers FIRST
+		res.setHeader('Access-Control-Allow-Origin', '*')
+		res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+		res.setHeader(
+			'Access-Control-Allow-Headers',
+			'Content-Type, X-SacIT-Token'
 		)
+		res.setHeader('Access-Control-Max-Age', '86400')
 
-		console.log('🚀 Processing event with utilities...')
-
-		// 1. Handle venue
-		let venueId = 0
-		if (eventData.venue) {
-			venueId = await getOrCreateVenue(eventData.venue, wpApiUrl, auth)
+		if (req.method === 'OPTIONS') {
+			return res.status(200).end()
 		}
 
-		// 2. Handle tags
-		let tagIds: number[] = []
-		if (eventData.tags && Array.isArray(eventData.tags)) {
-			console.log('Processing tags:', eventData.tags) // ← Match local format
-			tagIds = await getOrCreateTagIds(eventData.tags, wpApiUrl, auth)
-			console.log('Tag IDs to use:', tagIds) // ← Match local format
+		if (req.method !== 'POST') {
+			return res.status(405).json({ error: 'Method not allowed' })
 		}
 
-		// 3. Enhanced description
-		let enhancedDescription = eventData.content || ''
-		if (eventData.url) {
-			const domain = getDomainFromUrl(eventData.url)
-			enhancedDescription += `\n\n<p><strong>Original Event:</strong> <a href="${eventData.url}" target="_blank" rel="noopener">View on ${domain}</a></p>`
+		// Token validation
+		const token = req.headers['x-sacit-token']
+		if (token !== 'secret123') {
+			return res.status(401).json({ error: 'Unauthorized' })
 		}
 
-		// 4. Create event payload
-		const requestBody = {
-			title: eventData.title,
-			description: enhancedDescription,
-			start_date: formatDate(startDate),
-			end_date: formatDate(endDate),
-			timezone: eventData.timezone || 'America/Los_Angeles',
-			all_day: eventData.all_day || false,
-			cost: eventData.cost || '',
-			website: eventData.url || '',
-			venue: venueId,
-			show_map: true,
-			show_map_link: true,
-			featured: false,
-			status: 'draft',
-		}
-
-		// ✅ MATCH LOCAL - Detailed payload logging
-		console.log('=== MINIMAL PAYLOAD ===')
-		console.log(JSON.stringify(requestBody, null, 2))
-
-		// ✅ MATCH LOCAL - Detailed response logging
-		console.log('📝 Creating event...')
-		const response = await fetch(`${wpApiUrl}/tribe/events/v1/events`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Basic ${auth}`,
-			},
-			body: JSON.stringify(requestBody),
-		})
-
-		// ✅ MATCH LOCAL - Exact response handling
-		console.log('=== RESPONSE ===')
-		console.log('Status:', response.status)
-		console.log('Status Text:', response.statusText)
-
-		// Read the response body ONCE
-		const responseText = await response.text()
-		console.log('Response Body:', responseText)
-
-		if (!response.ok) {
-			throw new Error(`API Error: ${response.status} - ${responseText}`)
-		}
-
-		// Parse the response text (don't use response.json() after response.text())
-		let wpResult
 		try {
-			wpResult = JSON.parse(responseText)
-		} catch (parseError) {
-			throw new Error(`Failed to parse response: ${parseError.message}`)
-		}
+			console.log('🚀 Starting WordPress submission...')
 
-		console.log('✅ Event created:', wpResult.id)
+			const { eventData } = req.body
 
-		// 5. Add tags in separate request
-		if (tagIds.length > 0) {
-			console.log(`🏷️ Adding tags to event ${wpResult.id}:`, tagIds)
-			const tagResponse = await fetch(
-				`${wpApiUrl}/wp/v2/tribe_events/${wpResult.id}`,
-				{
-					method: 'POST',
-					headers: {
-						Authorization: `Basic ${auth}`,
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify({ tags: tagIds }),
-				}
-			)
+			// ✅ MATCH LOCAL VERSION - Detailed logging
+			console.log('=== RECEIVED EVENT DATA ===')
+			console.log(JSON.stringify(eventData, null, 2))
 
-			if (tagResponse.ok) {
-				console.log('✅ Tags added successfully')
-			} else {
-				console.warn('⚠️ Failed to add tags')
+			// ✅ MATCH LOCAL VERSION - Individual field validation
+			if (!eventData) {
+				throw new Error('Missing eventData')
 			}
-		}
+			if (!eventData.title) {
+				throw new Error('Missing title')
+			}
+			if (!eventData.start_date) {
+				throw new Error('Missing start_date')
+			}
 
-		// 6. Handle featured image
-		if (eventData.image_url) {
-			await setFeaturedImage(
-				wpResult.id,
-				eventData.image_url,
-				wpApiUrl,
-				auth
+			// ✅ ADD DATE PROCESSING - Match local version exactly
+			const startDate = new Date(eventData.start_date)
+			const endDate = eventData.end_date
+				? new Date(eventData.end_date)
+				: new Date(startDate.getTime() + 3600000) // Add 1 hour if no end date
+
+			// Check if dates are valid
+			if (isNaN(startDate.getTime())) {
+				throw new Error(`Invalid start_date: ${eventData.start_date}`)
+			}
+			if (isNaN(endDate.getTime())) {
+				throw new Error(`Invalid end_date: ${eventData.end_date}`)
+			}
+
+			console.log('=== PARSED DATES ===')
+			console.log('startDate:', startDate)
+			console.log('endDate:', endDate)
+
+			// WordPress API configuration
+			const wpApiUrl = process.env.WP_API_URL
+			const username = process.env.WP_USERNAME
+			const appPassword = process.env.WP_APP_PASSWORD
+			const auth = Buffer.from(`${username}:${appPassword}`).toString(
+				'base64'
 			)
-		}
 
-		return res.json({
-			success: true,
-			message: 'Event submitted to WordPress successfully',
-			wpEventId: wpResult.id,
-			wpEventUrl: wpResult.url,
-		})
-	} catch (error) {
-		console.error('💥 Error:', error)
-		return res.status(500).json({
-			success: false,
-			message: 'Failed to submit event to WordPress',
-			error: error.message,
-		})
-	}
+			console.log('🚀 Processing event with utilities...')
+
+			// 1. Handle venue
+			let venueId = 0
+			if (eventData.venue) {
+				venueId = await getOrCreateVenue(
+					eventData.venue,
+					wpApiUrl,
+					auth
+				)
+			}
+
+			// 2. Handle tags
+			let tagIds: number[] = []
+			if (eventData.tags && Array.isArray(eventData.tags)) {
+				console.log('Processing tags:', eventData.tags) // ← Match local format
+				tagIds = await getOrCreateTagIds(eventData.tags, wpApiUrl, auth)
+				console.log('Tag IDs to use:', tagIds) // ← Match local format
+			}
+
+			// 3. Enhanced description
+			let enhancedDescription = eventData.content || ''
+			if (eventData.url) {
+				const domain = getDomainFromUrl(eventData.url)
+				enhancedDescription += `\n\n<p><strong>Original Event:</strong> <a href="${eventData.url}" target="_blank" rel="noopener">View on ${domain}</a></p>`
+			}
+
+			// 4. Create event payload
+			const requestBody = {
+				title: eventData.title,
+				description: enhancedDescription,
+				start_date: formatDate(startDate),
+				end_date: formatDate(endDate),
+				timezone: eventData.timezone || 'America/Los_Angeles',
+				all_day: eventData.all_day || false,
+				cost: eventData.cost || '',
+				website: eventData.url || '',
+				venue: venueId,
+				show_map: true,
+				show_map_link: true,
+				featured: false,
+				status: 'draft',
+			}
+
+			// ✅ MATCH LOCAL - Detailed payload logging
+			console.log('=== MINIMAL PAYLOAD ===')
+			console.log(JSON.stringify(requestBody, null, 2))
+
+			// ✅ MATCH LOCAL - Detailed response logging
+			console.log('📝 Creating event...')
+			const response = await fetch(`${wpApiUrl}/tribe/events/v1/events`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Basic ${auth}`,
+				},
+				body: JSON.stringify(requestBody),
+			})
+
+			// ✅ MATCH LOCAL - Exact response handling
+			console.log('=== RESPONSE ===')
+			console.log('Status:', response.status)
+			console.log('Status Text:', response.statusText)
+
+			// Read the response body ONCE
+			const responseText = await response.text()
+			console.log('Response Body:', responseText)
+
+			if (!response.ok) {
+				throw new Error(
+					`API Error: ${response.status} - ${responseText}`
+				)
+			}
+
+			// Parse the response text (don't use response.json() after response.text())
+			let wpResult
+			try {
+				wpResult = JSON.parse(responseText)
+			} catch (parseError) {
+				throw new Error(
+					`Failed to parse response: ${parseError.message}`
+				)
+			}
+
+			console.log('✅ Event created:', wpResult.id)
+
+			// 5. Add tags in separate request
+			if (tagIds.length > 0) {
+				console.log(`🏷️ Adding tags to event ${wpResult.id}:`, tagIds)
+				const tagResponse = await fetch(
+					`${wpApiUrl}/wp/v2/tribe_events/${wpResult.id}`,
+					{
+						method: 'POST',
+						headers: {
+							Authorization: `Basic ${auth}`,
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({ tags: tagIds }),
+					}
+				)
+
+				if (tagResponse.ok) {
+					console.log('✅ Tags added successfully')
+				} else {
+					console.warn('⚠️ Failed to add tags')
+				}
+			}
+
+			// 6. Handle featured image
+			if (eventData.image_url) {
+				await setFeaturedImage(
+					wpResult.id,
+					eventData.image_url,
+					wpApiUrl,
+					auth
+				)
+			}
+
+			return res.json({
+				success: true,
+				message: 'Event submitted to WordPress successfully',
+				wpEventId: wpResult.id,
+				wpEventUrl: wpResult.url,
+			})
+		} catch (error) {
+			Sentry.captureException(error, {
+				tags: {
+					function: 'submit-to-wordpress',
+					eventTitle: req.body?.eventData?.title || 'unknown',
+				},
+				extra: {
+					eventData: req.body?.eventData,
+					wpConfig: {
+						hasApiUrl: !!process.env.WP_API_URL,
+						hasUsername: !!process.env.WP_USERNAME,
+						hasPassword: !!process.env.WP_APP_PASSWORD,
+					},
+				},
+			})
+
+			console.error('💥 Error:', error)
+			return res.status(500).json({
+				success: false,
+				message: 'Failed to submit event to WordPress',
+				error: error.message,
+			})
+		}
+	})
 }
 
 // ✅ ADD FORMAT DATE FUNCTION - Match local version exactly

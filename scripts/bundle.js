@@ -63,6 +63,12 @@ esbuild
 		console.log('🔍 After replacement has placeholder:', afterReplace)
 		console.log('🔍 Replacement worked:', beforeReplace && !afterReplace)
 
+		// Replace environment placeholder
+		bundledCode = bundledCode.replace(
+			'__ENVIRONMENT_PLACEHOLDER__',
+			environment
+		)
+
 		fs.writeFileSync('dist/bookmarklet.js', bundledCode)
 
 		// Create bookmarklet version (URL-encoded)

@@ -1,5 +1,15 @@
 import express from 'express'
 import cors from 'cors'
+import * as Sentry from '@sentry/node'
+
+// ✅ REAL SENTRY INIT - FIRST THING
+Sentry.init({
+	dsn: 'https://d0218b8c4606d5f2a3480ad10db9ed67@o4507068179349504.ingest.us.sentry.io/4507588915691521',
+	environment: process.env.NODE_ENV || 'development',
+	sendDefaultPii: true,
+	tracesSampleRate: 1.0,
+})
+
 import OpenAI from 'openai'
 import dotenv from 'dotenv'
 import path from 'path'
@@ -45,6 +55,10 @@ const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
 })
 
+// ✅ ADD SENTRY MIDDLEWARE
+app.use(Sentry.Handlers.requestHandler())
+app.use(Sentry.Handlers.tracingHandler())
+
 // Middleware
 app.use(cors())
 app.use(express.json({ limit: '10mb' }))
@@ -62,19 +76,26 @@ const validateToken = (req, res, next) => {
 
 // Routes
 app.post('/extract-event', async (req, res) => {
-	const token = req.header('X-SacIT-Token')
-	if (token !== 'secret123')
-		return res.status(401).json({ error: 'Unauthorized' })
+	Sentry.withScope((scope) => {
+		scope.setTag('endpoint', 'extract-event')
+		scope.setContext('request', {
+			url: req.body?.url,
+			contentLength: req.body?.content?.length,
+		})
 
-	const { url, content, images } = req.body
+		const token = req.header('X-SacIT-Token')
+		if (token !== 'secret123')
+			return res.status(401).json({ error: 'Unauthorized' })
 
-	// Get current date for context
-	const currentDate = new Date()
-	const currentDateString = currentDate.toISOString().split('T')[0] // YYYY-MM-DD format
-	const currentDateTime = currentDate.toISOString() // Full ISO format
-	const currentYear = currentDate.getFullYear()
+		const { url, content, images } = req.body
 
-	const prompt = `
+		// Get current date for context
+		const currentDate = new Date()
+		const currentDateString = currentDate.toISOString().split('T')[0] // YYYY-MM-DD format
+		const currentDateTime = currentDate.toISOString() // Full ISO format
+		const currentYear = currentDate.getFullYear()
+
+		const prompt = `
 You are an assistant that extracts structured event data from webpages.
 
 CURRENT DATE: ${currentDateString}
@@ -111,83 +132,87 @@ TEXT:
 ${content.slice(0, 3000)}
   `.trim()
 
-	try {
-		// Get event data from OpenAI
-		const response = await openai.chat.completions.create({
-			model: 'gpt-4o',
-			messages: [{ role: 'user', content: prompt }],
-			temperature: 0.3,
-		})
-
-		const result = response.choices[0].message.content
-		console.log('🔍 Extracted event:', result)
-
-		// Parse the result
-		let eventData
 		try {
-			let jsonString = result.trim()
+			// Get event data from OpenAI
+			const response = await openai.chat.completions.create({
+				model: 'gpt-4o',
+				messages: [{ role: 'user', content: prompt }],
+				temperature: 0.3,
+			})
 
-			console.log('Raw OpenAI response length:', jsonString.length)
-			console.log('First 50 chars:', jsonString.substring(0, 50))
-			console.log(
-				'Last 50 chars:',
-				jsonString.substring(jsonString.length - 50)
-			)
+			const result = response.choices[0].message.content
+			console.log('🔍 Extracted event:', result)
 
-			// More aggressive cleaning of markdown code blocks
-			if (jsonString.includes('```')) {
-				// Find the first { and last }
-				const firstBrace = jsonString.indexOf('{')
-				const lastBrace = jsonString.lastIndexOf('}')
+			// Parse the result
+			let eventData
+			try {
+				let jsonString = result.trim()
 
-				if (
-					firstBrace !== -1 &&
-					lastBrace !== -1 &&
-					lastBrace > firstBrace
-				) {
-					jsonString = jsonString.substring(firstBrace, lastBrace + 1)
-					console.log(
-						'Extracted JSON between braces:',
-						jsonString.substring(0, 100) + '...'
-					)
-				} else {
-					throw new Error(
-						'Could not find valid JSON braces in response'
-					)
+				console.log('Raw OpenAI response length:', jsonString.length)
+				console.log('First 50 chars:', jsonString.substring(0, 50))
+				console.log(
+					'Last 50 chars:',
+					jsonString.substring(jsonString.length - 50)
+				)
+
+				// More aggressive cleaning of markdown code blocks
+				if (jsonString.includes('```')) {
+					// Find the first { and last }
+					const firstBrace = jsonString.indexOf('{')
+					const lastBrace = jsonString.lastIndexOf('}')
+
+					if (
+						firstBrace !== -1 &&
+						lastBrace !== -1 &&
+						lastBrace > firstBrace
+					) {
+						jsonString = jsonString.substring(
+							firstBrace,
+							lastBrace + 1
+						)
+						console.log(
+							'Extracted JSON between braces:',
+							jsonString.substring(0, 100) + '...'
+						)
+					} else {
+						throw new Error(
+							'Could not find valid JSON braces in response'
+						)
+					}
 				}
+
+				console.log('Final JSON string length:', jsonString.length)
+				eventData = JSON.parse(jsonString)
+				console.log('✅ Parsed event data successfully')
+			} catch (parseError) {
+				console.error('Error parsing OpenAI response:', parseError)
+				console.error('Raw response:', result)
+				return res.status(500).json({
+					error: 'Failed to parse event data',
+					details: parseError.message,
+				})
 			}
 
-			console.log('Final JSON string length:', jsonString.length)
-			eventData = JSON.parse(jsonString)
-			console.log('✅ Parsed event data successfully')
-		} catch (parseError) {
-			console.error('Error parsing OpenAI response:', parseError)
-			console.error('Raw response:', result)
-			return res.status(500).json({
-				error: 'Failed to parse event data',
-				details: parseError.message,
+			// If event is irrelevant, return early
+			if (eventData && eventData.irrelevant) {
+				return res.json({ result: eventData })
+			}
+
+			// Add image URL if available
+			if (images && images.length > 0) {
+				eventData.image_url = images[0].url
+			}
+
+			// ONLY return the extracted data - don't create WordPress event yet
+			res.json({
+				result: eventData,
+				// No wordpress creation here
 			})
+		} catch (err) {
+			console.error('❌ Error:', err)
+			res.status(500).json({ error: 'Event extraction failed.' })
 		}
-
-		// If event is irrelevant, return early
-		if (eventData && eventData.irrelevant) {
-			return res.json({ result: eventData })
-		}
-
-		// Add image URL if available
-		if (images && images.length > 0) {
-			eventData.image_url = images[0].url
-		}
-
-		// ONLY return the extracted data - don't create WordPress event yet
-		res.json({
-			result: eventData,
-			// No wordpress creation here
-		})
-	} catch (err) {
-		console.error('❌ Error:', err)
-		res.status(500).json({ error: 'Event extraction failed.' })
-	}
+	})
 })
 
 // Add this new route with improved error handling
@@ -271,8 +296,11 @@ app.get('/check-events-api', async (req, res) => {
 	}
 })
 
+// ✅ SENTRY ERROR HANDLER - BEFORE OTHER ERROR HANDLERS
+app.use(Sentry.Handlers.errorHandler())
+
 // Start server
 app.listen(port, () => {
 	console.log(`Server running at http://localhost:${port}`)
-	console.log(`Bookmarklet URL: http://localhost:${port}/bookmarklet.html`)
+	console.log(`🔍 Sentry initialized for local development`)
 })
