@@ -1,15 +1,8 @@
+// ✅ SIMPLE SENTRY - Just import at the very top
+import './instrument.js' // ← That's it!
+
 import express from 'express'
 import cors from 'cors'
-import * as Sentry from '@sentry/node'
-
-// ✅ REAL SENTRY INIT - FIRST THING
-Sentry.init({
-	dsn: 'https://d0218b8c4606d5f2a3480ad10db9ed67@o4507068179349504.ingest.us.sentry.io/4507588915691521',
-	environment: process.env.NODE_ENV || 'development',
-	sendDefaultPii: true,
-	tracesSampleRate: 1.0,
-})
-
 import OpenAI from 'openai'
 import dotenv from 'dotenv'
 import path from 'path'
@@ -54,10 +47,6 @@ const port = process.env.PORT || 3000
 const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
 })
-
-// ✅ ADD SENTRY MIDDLEWARE
-app.use(Sentry.Handlers.requestHandler())
-app.use(Sentry.Handlers.tracingHandler())
 
 // Middleware
 app.use(cors())
@@ -302,5 +291,5 @@ app.use(Sentry.Handlers.errorHandler())
 // Start server
 app.listen(port, () => {
 	console.log(`Server running at http://localhost:${port}`)
-	console.log(`🔍 Sentry initialized for local development`)
+	console.log(`Bookmarklet URL: http://localhost:${port}/bookmarklet.html`)
 })

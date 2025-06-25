@@ -1,6 +1,4 @@
-// ✅ NO SENTRY IMPORT - Keep bookmarklet small
-// import * as Sentry from '@sentry/browser'  // ← Remove this
-
+// ✅ NO SENTRY IMPORTS - Keep bookmarklet small and draggable
 // Main bookmarklet entry point
 import { showNotification } from './components/Notifications'
 import { showEventResult } from './components/EventDialog'

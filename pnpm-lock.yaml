@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@sentry/browser':
-        specifier: ^9.22.0
-        version: 9.22.0
       '@sentry/node':
         specifier: ^9.31.0
         version: 9.31.0
@@ -627,30 +624,6 @@ packages:
     peerDependenciesMeta:
       rollup:
         optional: true
-
-  '@sentry-internal/browser-utils@9.22.0':
-    resolution: {integrity: sha512-Ou1tBnVxFAIn8i9gvrWzRotNJQYiu3awNXpsFCw6qFwmiKAVPa6b13vCdolhXnrIiuR77jY1LQnKh9hXpoRzsg==}
-    engines: {node: '>=18'}
-
-  '@sentry-internal/feedback@9.22.0':
-    resolution: {integrity: sha512-zgMVkoC61fgi41zLcSZA59vOtKxcLrKBo1ECYhPD1hxEaneNqY5fhXDwlQBw96P5l2yqkgfX6YZtSdU4ejI9yA==}
-    engines: {node: '>=18'}
-
-  '@sentry-internal/replay-canvas@9.22.0':
-    resolution: {integrity: sha512-EcG9IMSEalFe49kowBTJObWjof/iHteDwpyuAszsFDdQUYATrVUtwpwN7o52vDYWJud4arhjrQnMamIGxa79eQ==}
-    engines: {node: '>=18'}
-
-  '@sentry-internal/replay@9.22.0':
-    resolution: {integrity: sha512-9GOycoKbrclcRXfcbNV8svbmAsOS5R4wXBQmKF4pFLkmFA/lJv9kdZSNYkRvkrxdNfbMIJXP+DV9EqTZcryXig==}
-    engines: {node: '>=18'}
-
-  '@sentry/browser@9.22.0':
-    resolution: {integrity: sha512-3TeRm74dvX0JdjX0AgkQa+22iUHwHnY+Q6M05NZ+tDeCNHGK/mEBTeqquS1oQX67jWyuvYmG3VV6RJUxtG9Paw==}
-    engines: {node: '>=18'}
-
-  '@sentry/core@9.22.0':
-    resolution: {integrity: sha512-ixvtKmPF42Y6ckGUbFlB54OWI75H2gO5UYHojO6eXFpS7xO3ZGgV/QH6wb40mWK+0w5XZ0233FuU9VpsuE6mKA==}
-    engines: {node: '>=18'}
 
   '@sentry/core@9.31.0':
     resolution: {integrity: sha512-6JeoPGvBgT9m2YFIf2CrW+KrrOYzUqb9+Xwr/Dw25kPjVKy+WJjWqK8DKCNLgkBA22OCmSOmHuRwFR0YxGVdZQ==}
@@ -2722,34 +2695,6 @@ snapshots:
       '@types/estree': 1.0.7
       estree-walker: 2.0.2
       picomatch: 4.0.2
-
-  '@sentry-internal/browser-utils@9.22.0':
-    dependencies:
-      '@sentry/core': 9.22.0
-
-  '@sentry-internal/feedback@9.22.0':
-    dependencies:
-      '@sentry/core': 9.22.0
-
-  '@sentry-internal/replay-canvas@9.22.0':
-    dependencies:
-      '@sentry-internal/replay': 9.22.0
-      '@sentry/core': 9.22.0
-
-  '@sentry-internal/replay@9.22.0':
-    dependencies:
-      '@sentry-internal/browser-utils': 9.22.0
-      '@sentry/core': 9.22.0
-
-  '@sentry/browser@9.22.0':
-    dependencies:
-      '@sentry-internal/browser-utils': 9.22.0
-      '@sentry-internal/feedback': 9.22.0
-      '@sentry-internal/replay': 9.22.0
-      '@sentry-internal/replay-canvas': 9.22.0
-      '@sentry/core': 9.22.0
-
-  '@sentry/core@9.22.0': {}
 
   '@sentry/core@9.31.0': {}
 
