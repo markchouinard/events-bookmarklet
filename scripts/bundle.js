@@ -1,5 +1,4 @@
 import * as esbuild from 'esbuild'
-import { sentryEsbuildPlugin } from '@sentry/esbuild-plugin'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import path from 'path'
@@ -14,13 +13,15 @@ const environment = process.env.NODE_ENV || 'development'
 let apiUrl
 switch (environment) {
 	case 'production':
-		apiUrl = 'https://events-bookmarklet.vercel.app/api/extract-event'
+		apiUrl = process.env.VERCEL_URL
+			? `https://${process.env.VERCEL_URL}/extract-event`
+			: 'https://events-bookmarklet.vercel.app/extract-event'
 		break
 	case 'staging':
-		apiUrl = 'https://stage.sacitcentral.com/api/extract-event'
+		apiUrl = 'https://stage.sacitcentral.com/extract-event'
 		break
 	default:
-		apiUrl = 'http://localhost:3000/api/extract-event' // ← Add /api prefix
+		apiUrl = 'http://localhost:3000/extract-event'
 }
 
 console.log(
@@ -39,14 +40,6 @@ esbuild
 		target: ['es2015'],
 		tsconfig: 'tsconfig.json',
 		sourcemap: true, // Source map generation must be turned on
-		plugins: [
-			// Put the Sentry esbuild plugin after all other plugins
-			sentryEsbuildPlugin({
-				authToken: process.env.SENTRY_AUTH_TOKEN,
-				org: 'chouinard',
-				project: 'event-bookmarklet',
-			}),
-		],
 	})
 	.then(() => {
 		console.log('⚡ Bookmarklet bundled successfully!')
