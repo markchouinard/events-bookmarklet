@@ -158,11 +158,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 		// Handle featured image (simplified for now)
 		if (eventData.image_url && wpResult.id) {
-			console.log(
-				'🖼️ Image URL saved in event data:',
-				eventData.image_url
-			)
-			// Image upload is complex in serverless - for now just log it
+			console.log('🖼️ Setting featured image from:', eventData.image_url)
+			try {
+				await setFeaturedImage(
+					wpResult.id,
+					eventData.image_url,
+					wpApiUrl,
+					auth
+				)
+			} catch (imageError) {
+				console.warn('⚠️ Featured image upload failed:', imageError)
+			}
 		}
 
 		return res.json({
@@ -335,5 +341,91 @@ function getDomainFromUrl(url: string): string {
 		return urlObj.hostname.replace('www.', '')
 	} catch (e) {
 		return 'original source'
+	}
+}
+
+async function setFeaturedImage(
+	eventId: number,
+	imageUrl: string,
+	wpApiUrl: string,
+	authString: string
+): Promise<boolean> {
+	try {
+		console.log(`🖼️ Downloading image from: ${imageUrl}`)
+
+		const imageResponse = await fetch(imageUrl)
+		if (!imageResponse.ok) {
+			throw new Error(
+				`Failed to fetch image: ${imageResponse.statusText}`
+			)
+		}
+
+		// Fix: Use blob directly from response
+		const blob = await imageResponse.blob()
+		const contentType =
+			imageResponse.headers.get('content-type') || 'image/jpeg'
+
+		console.log(
+			`📦 Image downloaded: ${blob.size} bytes, type: ${contentType}`
+		)
+
+		// Use native FormData
+		const formData = new FormData()
+
+		const extension = contentType.includes('png') ? 'png' : 'jpg'
+		const filename = `event-${eventId}-featured.${extension}`
+
+		// This should work now - blob is proper Blob type
+		formData.append('file', blob, filename)
+
+		// Upload to WordPress media library
+		console.log('📤 Uploading to WordPress media library...')
+		const uploadResponse = await fetch(`${wpApiUrl}/wp/v2/media`, {
+			method: 'POST',
+			headers: {
+				Authorization: `Basic ${authString}`,
+				// Let FormData set Content-Type automatically
+			},
+			body: formData,
+		})
+
+		if (!uploadResponse.ok) {
+			const errorText = await uploadResponse.text()
+			throw new Error(
+				`Media upload failed: ${uploadResponse.status} - ${errorText}`
+			)
+		}
+
+		const mediaObject = await uploadResponse.json()
+		console.log('✅ Media uploaded successfully:', mediaObject.id)
+
+		// Set as featured image
+		console.log(`🖼️ Setting as featured image for event ${eventId}`)
+		const updateResponse = await fetch(
+			`${wpApiUrl}/wp/v2/tribe_events/${eventId}`,
+			{
+				method: 'POST',
+				headers: {
+					Authorization: `Basic ${authString}`,
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					featured_media: mediaObject.id,
+				}),
+			}
+		)
+
+		if (!updateResponse.ok) {
+			const errorText = await updateResponse.text()
+			throw new Error(
+				`Failed to set featured image: ${updateResponse.status} - ${errorText}`
+			)
+		}
+
+		console.log('🎉 Featured image set successfully!')
+		return true
+	} catch (error) {
+		console.error('❌ Error setting featured image:', error)
+		return false
 	}
 }

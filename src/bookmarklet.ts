@@ -10,7 +10,7 @@ import { EventData } from './types'
 import { showEnvironmentBadge } from './utils/UIUtils'
 
 // ✅ KEEP ORIGINAL STRUCTURE - Just add Sentry context and error capture
-;(function () {
+;(async function () {
 	try {
 		// Ensure environment badge is visible
 		showEnvironmentBadge()
@@ -18,7 +18,7 @@ import { showEnvironmentBadge } from './utils/UIUtils'
 		const content = document.body.innerText.slice(0, 10000)
 
 		// Extract images
-		const images = extractImages()
+		const images = await extractImages()
 
 		const payload = {
 			url: url,
