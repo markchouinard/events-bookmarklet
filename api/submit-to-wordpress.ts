@@ -32,12 +32,57 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			})
 		}
 
-		// TODO: Implement WordPress API call here
-		// For now, just return success
+		console.log(`Submitting event to WordPress: ${eventData.title}`)
+
+		// WordPress API configuration
+		const wpApiUrl = process.env.WP_API_URL
+		const username = process.env.WP_USERNAME
+		const appPassword = process.env.WP_APP_PASSWORD
+
+		if (!wpApiUrl || !username || !appPassword) {
+			throw new Error('Missing WordPress API configuration')
+		}
+
+		// Create Basic Auth header
+		const auth = Buffer.from(`${username}:${appPassword}`).toString(
+			'base64'
+		)
+
+		// Submit to WordPress
+		const response = await fetch(`${wpApiUrl}/wp/v2/tribe_events`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Basic ${auth}`,
+			},
+			body: JSON.stringify({
+				title: eventData.title,
+				content: eventData.content || '',
+				status: 'draft', // Start as draft for review
+				meta: {
+					_EventStartDate: eventData.start_date,
+					_EventEndDate: eventData.end_date || eventData.start_date,
+					_EventVenueID: eventData.venue || '',
+					_EventCost: eventData.cost || 'Free',
+					_EventURL: eventData.url || '',
+				},
+			}),
+		})
+
+		if (!response.ok) {
+			const errorText = await response.text()
+			throw new Error(
+				`WordPress API error: ${response.status} - ${errorText}`
+			)
+		}
+
+		const wpResult = await response.json()
+
 		return res.json({
 			success: true,
-			message: 'Event would be submitted to WordPress',
-			eventData: eventData,
+			message: 'Event submitted to WordPress successfully',
+			wpEventId: wpResult.id,
+			wpEventUrl: wpResult.link,
 		})
 	} catch (error) {
 		console.error('Error submitting to WordPress:', error)
