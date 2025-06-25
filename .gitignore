@@ -1,1 +1,5 @@
 .vercel
+
+# Sentry
+.sentryclirc
+dist/*.js.map

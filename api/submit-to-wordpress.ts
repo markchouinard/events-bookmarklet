@@ -1,5 +1,6 @@
 // ✅ SIMPLE SENTRY - Just import at the top
 import '../instrument.js'
+import FormData from 'form-data'
 
 import { VercelRequest, VercelResponse } from '@vercel/node'
 
@@ -441,7 +442,6 @@ async function setFeaturedImage(
 			const extension = contentType.includes('png') ? 'png' : 'jpg'
 			const filename = `event-${eventId}-featured.${extension}`
 
-			const FormData = require('form-data')
 			const formData = new FormData()
 
 			formData.append('file', imageBuffer, {

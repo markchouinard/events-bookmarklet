@@ -9,6 +9,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { checkApiConnection, createEvent } from './wordpress-api.ts'
 import { json } from 'stream/consumers'
+import * as Sentry from '@sentry/node'
 
 // Load environment variables
 dotenv.config()
@@ -65,7 +66,8 @@ const validateToken = (req, res, next) => {
 
 // Routes
 app.post('/extract-event', async (req, res) => {
-	Sentry.withScope((scope) => {
+	Sentry.withScope(async (scope) => {
+		// ← Add 'async' here!
 		scope.setTag('endpoint', 'extract-event')
 		scope.setContext('request', {
 			url: req.body?.url,
@@ -287,6 +289,27 @@ app.get('/check-events-api', async (req, res) => {
 
 // ✅ SENTRY ERROR HANDLER - BEFORE OTHER ERROR HANDLERS
 app.use(Sentry.Handlers.errorHandler())
+
+// ✅ ADD SENTRY TEST ENDPOINT
+app.get('/test-sentry', (req, res) => {
+	const Sentry = require('@sentry/node')
+
+	console.log('🧪 Testing Sentry error capture...')
+
+	try {
+		// This will throw an error
+		foo() // ← This function doesn't exist
+	} catch (e) {
+		console.log('✅ Caught error, sending to Sentry...')
+		Sentry.captureException(e)
+
+		res.json({
+			success: true,
+			message: 'Error captured and sent to Sentry!',
+			error: e.message,
+		})
+	}
+})
 
 // Start server
 app.listen(port, () => {

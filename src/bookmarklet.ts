@@ -100,3 +100,5 @@ import { showEnvironmentBadge } from './utils/UIUtils'
 		showNotification('Critical error', 'error', errorMessage)
 	}
 })()
+
+export {}
