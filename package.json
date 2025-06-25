@@ -9,7 +9,9 @@
 		"build": "node scripts/bundle.js",
 		"build:staging": "NODE_ENV=staging node scripts/bundle.js",
 		"build:prod": "NODE_ENV=production node scripts/bundle.js",
-		"vercel-build": "npm run build:prod"
+		"vercel-build": "npm run build:prod",
+		"server:local": "NODE_TLS_REJECT_UNAUTHORIZED=0 tsx server.ts",
+		"start:local": "node scripts/bundle.js && NODE_TLS_REJECT_UNAUTHORIZED=0 tsx server.ts"
 	},
 	"keywords": [],
 	"author": "",

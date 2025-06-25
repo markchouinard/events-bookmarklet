@@ -37,7 +37,7 @@ import { showEnvironmentBadge } from './utils/UIUtils'
 		console.log('[SacIT] Image details:', images)
 
 		// Extract event data
-		fetch('__API_URL_PLACEHOLDER__', {
+		fetch('https://events-bookmarklet.vercel.app/extract-event', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',

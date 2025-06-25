@@ -46,8 +46,23 @@ esbuild
 		// Read the bundled file
 		let bundledCode = fs.readFileSync('dist/bookmarklet.js', 'utf8')
 
+		// DEBUG: Log what we're looking for
+		console.log('🔍 Environment:', environment)
+		console.log('🔍 API URL:', apiUrl)
+		console.log(
+			'🔍 Contains placeholder:',
+			bundledCode.includes('__API_URL_PLACEHOLDER__')
+		)
+		console.log('🔍 Bundled code length:', bundledCode.length)
+
 		// Replace API URL placeholder with actual environment URL
-		bundledCode = bundledCode.replace('__API_URL_PLACEHOLDER__', apiUrl)
+		const beforeReplace = bundledCode.includes('__API_URL_PLACEHOLDER__')
+		bundledCode = bundledCode.replace(/__API_URL_PLACEHOLDER__/g, apiUrl)
+		const afterReplace = bundledCode.includes('__API_URL_PLACEHOLDER__')
+
+		console.log('🔍 Before replacement had placeholder:', beforeReplace)
+		console.log('🔍 After replacement has placeholder:', afterReplace)
+		console.log('🔍 Replacement worked:', beforeReplace && !afterReplace)
 
 		fs.writeFileSync('dist/bookmarklet.js', bundledCode)
 
