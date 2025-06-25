@@ -191,9 +191,10 @@ async function getOrCreateVenue(
 	authString: string
 ): Promise<number> {
 	try {
-		console.log(`🏢 Processing venue: ${locationName}`)
+		// ✅ MATCH LOCAL - Exact logging format
+		console.log(`Creating new venue: ${locationName}`)
 
-		// First, check if venue already exists
+		// First, check if venue already exists with this name
 		const searchResponse = await fetch(
 			`${wpApiUrl}/wp/v2/tribe_venue?search=${encodeURIComponent(
 				locationName
@@ -208,17 +209,18 @@ async function getOrCreateVenue(
 		if (searchResponse.ok) {
 			const venues = await searchResponse.json()
 			if (venues.length > 0) {
+				// ✅ MATCH LOCAL - Exact logging format
 				console.log(
-					`✅ Found existing venue: ${venues[0].title.rendered} (ID: ${venues[0].id})`
+					`Found existing venue: ${venues[0].title.rendered} (ID: ${venues[0].id})`
 				)
 				return venues[0].id
 			}
 		}
 
-		// Create new venue
-		console.log(`🆕 Creating new venue: ${locationName}`)
+		// If not found, create a new venue
+		console.log(`Creating new venue: ${locationName}`)
 
-		// Parse location for more details if possible
+		// ✅ ADD LOCATION PARSING - Match local version exactly
 		let venueAddress = ''
 		let venueCity = ''
 		let venueState = ''
@@ -246,6 +248,7 @@ async function getOrCreateVenue(
 			}
 		}
 
+		// ✅ USE PARSED LOCATION DATA
 		const venuePayload = {
 			title: locationName,
 			status: 'publish',
@@ -272,19 +275,16 @@ async function getOrCreateVenue(
 		})
 
 		if (!createResponse.ok) {
-			const errorText = await createResponse.text()
-			console.error(
-				`❌ Failed to create venue: ${createResponse.status} - ${errorText}`
-			)
-			return 0
+			// ✅ MATCH LOCAL - Throw error instead of returning 0
+			throw new Error(`Failed to create venue: ${createResponse.status}`)
 		}
 
 		const newVenue = await createResponse.json()
-		console.log(`✅ Created new venue with ID: ${newVenue.id}`)
+		console.log(`Created new venue with ID: ${newVenue.id}`)
 		return newVenue.id
 	} catch (error) {
-		console.error('❌ Error with venue:', error)
-		return 0
+		console.error('Error with venue:', error)
+		return 0 // Return 0 to indicate no venue
 	}
 }
 
