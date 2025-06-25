@@ -63,7 +63,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 		const requestBody = {
 			title: eventData.title,
-			description: eventData.content || eventData.description || '',
+			// Enhanced description with source link
+			description: `${eventData.content || ''}
+
+${eventData.venue ? `**Venue:** ${eventData.venue}` : ''}
+
+${
+	eventData.url
+		? `**Original Event:** [View on ${getDomainFromUrl(eventData.url)}](${
+				eventData.url
+		  })`
+		: ''
+}`.trim(),
 			start_date: eventData.start_date, // Direct field, not meta!
 			end_date: eventData.end_date || eventData.start_date,
 			timezone: eventData.timezone || 'America/Los_Angeles',
@@ -138,5 +149,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			error: error.message,
 			stack: error.stack,
 		})
+	}
+}
+
+function getDomainFromUrl(url) {
+	try {
+		if (!url || typeof url !== 'string') {
+			return 'original source'
+		}
+
+		const urlObj = new URL(url)
+		let domain = urlObj.hostname
+
+		// Remove www. prefix if present
+		if (domain.startsWith('www.')) {
+			domain = domain.substring(4)
+		}
+
+		return domain
+	} catch (e) {
+		console.error('Error parsing URL:', url, e)
+		return 'original source'
 	}
 }
