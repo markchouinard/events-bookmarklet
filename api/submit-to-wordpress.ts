@@ -1,4 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
+import { getOrCreateVenue } from './utils/venue-handler'
+import { getOrCreateTagIds } from './utils/tag-handler'
+import { setFeaturedImage } from './utils/image-handler'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 	// Add CORS headers
@@ -61,45 +64,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 		console.log('🎯 WordPress endpoint:', wpEndpoint)
 
+		console.log('🚀 Processing event with utilities...')
+
+		// 1. Handle venue
+		let venueId = 0
+		if (eventData.venue) {
+			venueId = await getOrCreateVenue(eventData.venue, wpApiUrl, auth)
+		}
+
+		// 2. Handle tags
+		let tagIds: number[] = []
+		if (eventData.tags && Array.isArray(eventData.tags)) {
+			tagIds = await getOrCreateTagIds(eventData.tags, wpApiUrl, auth)
+		}
+
+		// 3. Enhanced description
+		let enhancedDescription = eventData.content || ''
+		if (eventData.url) {
+			const domain = getDomainFromUrl(eventData.url)
+			enhancedDescription += `\n\n<p><strong>Original Event:</strong> <a href="${eventData.url}" target="_blank" rel="noopener">View on ${domain}</a></p>`
+		}
+
+		// 4. Create event payload
 		const requestBody = {
 			title: eventData.title,
-			// Enhanced description with source link
-			description: `${eventData.content || ''}
-
-${eventData.venue ? `**Venue:** ${eventData.venue}` : ''}
-
-${
-	eventData.url
-		? `**Original Event:** [View on ${getDomainFromUrl(eventData.url)}](${
-				eventData.url
-		  })`
-		: ''
-}`.trim(),
+			description: enhancedDescription,
 			start_date: eventData.start_date, // Direct field, not meta!
 			end_date: eventData.end_date || eventData.start_date,
 			timezone: eventData.timezone || 'America/Los_Angeles',
 			all_day: eventData.all_day || false,
 			cost: eventData.cost || '',
 			website: eventData.url || '',
-			image: eventData.image_url || '',
+			venue: venueId,
 			show_map: true,
 			show_map_link: true,
 			featured: false,
 			status: 'draft',
-
-			// Handle tags and categories if you have them
-			tags: eventData.tags
-				? eventData.tags.map((tag) => ({ name: tag }))
-				: [],
-
-			// Handle venue - you'll need to create venues first or use existing IDs
-			// For now, put venue info in description
 		}
 
-		console.log('📝 Request body:', JSON.stringify(requestBody, null, 2))
-
-		// Submit to WordPress
-		console.log('📡 Making request to WordPress...')
+		console.log('📝 Creating event...')
 		const response = await fetch(wpEndpoint, {
 			method: 'POST',
 			headers: {
@@ -115,60 +118,69 @@ ${
 			response.statusText
 		)
 
-		const responseText = await response.text()
-		console.log('📄 WordPress response body:', responseText)
-
 		if (!response.ok) {
-			console.error(
-				'❌ WordPress API error:',
-				response.status,
-				responseText
+			const errorText = await response.text()
+			throw new Error(
+				`WordPress API error: ${response.status} - ${errorText}`
 			)
-			return res.status(500).json({
-				success: false,
-				message: `WordPress API error: ${response.status}`,
-				details: responseText,
-			})
 		}
 
-		const wpResult = JSON.parse(responseText)
-		console.log('✅ WordPress success:', wpResult.id)
+		const wpResult = await response.json()
+		console.log('✅ Event created:', wpResult.id)
+
+		// 5. Add tags in separate request
+		if (tagIds.length > 0) {
+			console.log(`🏷️ Adding tags to event ${wpResult.id}:`, tagIds)
+			const tagResponse = await fetch(
+				`${wpApiUrl}/wp/v2/tribe_events/${wpResult.id}`,
+				{
+					method: 'POST',
+					headers: {
+						Authorization: `Basic ${auth}`,
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ tags: tagIds }),
+				}
+			)
+
+			if (tagResponse.ok) {
+				console.log('✅ Tags added successfully')
+			} else {
+				console.warn('⚠️ Failed to add tags')
+			}
+		}
+
+		// 6. Handle featured image
+		if (eventData.image_url) {
+			await setFeaturedImage(
+				wpResult.id,
+				eventData.image_url,
+				wpApiUrl,
+				auth
+			)
+		}
 
 		return res.json({
 			success: true,
 			message: 'Event submitted to WordPress successfully',
 			wpEventId: wpResult.id,
-			wpEventUrl: wpResult.link,
+			wpEventUrl: wpResult.url,
 		})
 	} catch (error) {
-		console.error('💥 Catch block error:', error)
-		console.error('💥 Error stack:', error.stack)
+		console.error('💥 Error:', error)
 		return res.status(500).json({
 			success: false,
 			message: 'Failed to submit event to WordPress',
 			error: error.message,
-			stack: error.stack,
 		})
 	}
 }
 
-function getDomainFromUrl(url) {
+function getDomainFromUrl(url: string): string {
 	try {
-		if (!url || typeof url !== 'string') {
-			return 'original source'
-		}
-
 		const urlObj = new URL(url)
-		let domain = urlObj.hostname
-
-		// Remove www. prefix if present
-		if (domain.startsWith('www.')) {
-			domain = domain.substring(4)
-		}
-
-		return domain
+		return urlObj.hostname.replace('www.', '')
 	} catch (e) {
-		console.error('Error parsing URL:', url, e)
 		return 'original source'
 	}
 }
