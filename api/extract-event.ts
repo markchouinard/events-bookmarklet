@@ -65,7 +65,9 @@ IMPORTANT DATE PARSING RULES:
 - If no end time is specified, estimate a reasonable duration (typically 1-3 hours for most events)
 - For California events, use "America/Los_Angeles" timezone
 
-If the event isn't relevant to tech, professional networking, or IT in California, return: { "irrelevant": true }
+RELEVANCE CRITERIA:
+- If the event isn't relevant to tech, professional networking, artificial intelligence, or IT in California, return: { "irrelevant": true, "reason": "your reasons for making this decision" }
+- **IMPORTANT: If the event date has already passed (before ${currentDateString}), return: { "irrelevant": true, "reason": "Event date has already passed" }**
 
 Return only the JSON object, no other text or formatting.
 
