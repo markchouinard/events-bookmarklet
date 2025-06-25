@@ -78,7 +78,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		// 2. Handle tags
 		let tagIds: number[] = []
 		if (eventData.tags && Array.isArray(eventData.tags)) {
+			console.log('Processing tags:', eventData.tags) // ← Match local format
 			tagIds = await getOrCreateTagIds(eventData.tags, wpApiUrl, auth)
+			console.log('Tag IDs to use:', tagIds) // ← Match local format
 		}
 
 		// 3. Enhanced description
@@ -289,19 +291,24 @@ async function getOrCreateVenue(
 }
 
 async function getOrCreateTagIds(
-	tags: string[],
+	tags: (string | number)[],
 	wpApiUrl: string,
 	authString: string
 ): Promise<number[]> {
-	console.log(`🏷️ Processing ${tags.length} tags:`, tags)
+	console.log(`Processing ${tags.length} tags:`, tags)
 
 	const tagIds: number[] = []
 
 	for (const tagName of tags) {
 		try {
+			// Convert to string if it's a number
+			const tagNameStr = String(tagName)
+
 			// Search for existing tag
 			const searchResponse = await fetch(
-				`${wpApiUrl}/wp/v2/tags?search=${encodeURIComponent(tagName)}`,
+				`${wpApiUrl}/wp/v2/tags?search=${encodeURIComponent(
+					tagNameStr
+				)}`,
 				{
 					headers: {
 						Authorization: `Basic ${authString}`,
@@ -312,12 +319,12 @@ async function getOrCreateTagIds(
 			if (searchResponse.ok) {
 				const existingTags = await searchResponse.json()
 				const exactMatch = existingTags.find(
-					(tag) => tag.name.toLowerCase() === tagName.toLowerCase()
+					(tag) => tag.name.toLowerCase() === tagNameStr.toLowerCase()
 				)
 
 				if (exactMatch) {
 					console.log(
-						`✅ Found existing tag: ${exactMatch.name} (ID: ${exactMatch.id})`
+						`Found existing tag: ${exactMatch.name} (ID: ${exactMatch.id})`
 					)
 					tagIds.push(exactMatch.id)
 					continue
@@ -325,7 +332,7 @@ async function getOrCreateTagIds(
 			}
 
 			// Create new tag
-			console.log(`🆕 Creating new tag: ${tagName}`)
+			console.log(`Creating new tag: ${tagNameStr}`)
 			const createResponse = await fetch(`${wpApiUrl}/wp/v2/tags`, {
 				method: 'POST',
 				headers: {
@@ -333,29 +340,30 @@ async function getOrCreateTagIds(
 					'Content-Type': 'application/json',
 				},
 				body: JSON.stringify({
-					name: tagName,
-					slug: tagName.toLowerCase().replace(/\s+/g, '-'),
+					name: tagNameStr,
+					slug: tagNameStr.toLowerCase().replace(/\s+/g, '-'),
 				}),
 			})
 
 			if (createResponse.ok) {
 				const newTag = await createResponse.json()
 				console.log(
-					`✅ Created new tag: ${newTag.name} (ID: ${newTag.id})`
+					`Created new tag: ${newTag.name} (ID: ${newTag.id})`
 				)
 				tagIds.push(newTag.id)
 			} else {
+				const errorText = await createResponse.text()
 				console.error(
-					`❌ Failed to create tag "${tagName}": ${createResponse.status}`
+					`Failed to create tag "${tagNameStr}": ${createResponse.status} - ${errorText}`
 				)
 			}
 		} catch (error) {
-			console.error(`❌ Error processing tag "${tagName}":`, error)
+			console.error(`Error processing tag "${tagName}":`, error)
 		}
 	}
 
 	console.log(
-		`🏷️ Processed ${tags.length} tags into ${tagIds.length} tag IDs:`,
+		`Processed ${tags.length} tags into ${tagIds.length} tag IDs:`,
 		tagIds
 	)
 	return tagIds
