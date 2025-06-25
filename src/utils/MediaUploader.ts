@@ -1,6 +1,5 @@
 import fs from 'fs'
 import FormData from 'form-data'
-import fetch from 'node-fetch'
 import { WordPressMediaObject, UploadOptions } from '../types/wordpress'
 
 export class MediaUploader {
@@ -287,6 +286,13 @@ export class MediaUploader {
 		options: UploadOptions = {}
 	): Promise<WordPressMediaObject> {
 		try {
+			// Add safety check at the beginning
+			if (!base64Data || typeof base64Data !== 'string') {
+				throw new Error(
+					'Invalid base64 data: must be a non-empty string'
+				)
+			}
+
 			// Remove data URL prefix if present (data:image/jpeg;base64,...)
 			const base64String = base64Data.includes(',')
 				? base64Data.split(',')[1]

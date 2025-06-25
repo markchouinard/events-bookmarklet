@@ -1,6 +1,3 @@
-// ✅ SIMPLE SENTRY - Just import at the top
-import '../instrument.js'
-
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import OpenAI from 'openai'
 
@@ -13,7 +10,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 	// Add CORS headers FIRST - before any other logic
 	res.setHeader('Access-Control-Allow-Origin', '*')
 	res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-	res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-SacIT-Token')
+	res.setHeader(
+		'Access-Control-Allow-Headers',
+		'Content-Type, X-SacIT-Token, baggage, sentry-trace'
+	)
 	res.setHeader('Access-Control-Max-Age', '86400')
 
 	// Handle preflight OPTIONS request

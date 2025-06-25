@@ -5,13 +5,9 @@
 	"main": "index.js",
 	"type": "module",
 	"scripts": {
-		"build:ts": "tsc",
-		"build": "node scripts/bundle.js",
-		"build:staging": "NODE_ENV=staging node scripts/bundle.js",
+		"build": "NODE_ENV=development node scripts/bundle.js",
 		"build:prod": "NODE_ENV=production node scripts/bundle.js",
-		"vercel-build": "npm run build:prod",
-		"start": "npm run build && vercel dev",
-		"start:staging": "NODE_ENV=staging npm run build:staging && NODE_ENV=staging vercel dev"
+		"start": "node scripts/bundle.js"
 	},
 	"keywords": [],
 	"author": "",
@@ -19,10 +15,8 @@
 	"packageManager": "pnpm@10.11.0",
 	"dependencies": {
 		"@sentry/browser": "^9.22.0",
+		"@sentry/node": "^9.31.0",
 		"body-parser": "^2.2.0",
-		"cors": "^2.8.5",
-		"dotenv": "^16.5.0",
-		"express": "^5.1.0",
 		"form-data": "^4.0.2",
 		"node-fetch": "^3.3.2",
 		"openai": "^4.103.0",

@@ -1,6 +1,5 @@
 import fs from 'fs'
 import FormData from 'form-data'
-import fetch from 'node-fetch'
 import { WordPressMediaObject, UploadOptions } from '../types/wordpress'
 
 export const uploadImageWithMetadata = async (

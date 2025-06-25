@@ -9,19 +9,14 @@ const __dirname = path.dirname(__filename)
 
 const environment = process.env.NODE_ENV || 'development'
 
-// Get environment-specific API URL - update for Vercel
+// Get environment-specific API URL
 let apiUrl
 switch (environment) {
 	case 'production':
-		apiUrl = process.env.VERCEL_URL
-			? `https://${process.env.VERCEL_URL}/extract-event`
-			: 'https://events-bookmarklet.vercel.app/extract-event'
-		break
-	case 'staging':
-		apiUrl = 'https://stage.sacitcentral.com/extract-event'
+		apiUrl = 'https://events-bookmarklet.vercel.app/api/extract-event'
 		break
 	default:
-		apiUrl = 'http://localhost:3000/extract-event'
+		apiUrl = 'http://localhost:3000/api/extract-event'
 }
 
 console.log(

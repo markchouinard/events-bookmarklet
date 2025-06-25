@@ -1,5 +1,4 @@
 import FormData from 'form-data'
-import fetch from 'node-fetch'
 import { WordPressMediaObject } from '../types/wordpress'
 
 export const uploadImageFromUrl = async (

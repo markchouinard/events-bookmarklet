@@ -30,11 +30,12 @@ const RASTER_FORMATS = [
 
 // Enhanced image validation
 const isValidImageUrl = (url: string): boolean => {
-	if (
-		!url ||
-		url.trim() === '' ||
-		url.startsWith('data:image/svg+xml;base64,')
-	) {
+	// Ensure url is a string
+	if (!url || typeof url !== 'string') {
+		return false
+	}
+
+	if (url.trim() === '' || url.startsWith('data:image/svg+xml;base64,')) {
 		return false
 	}
 

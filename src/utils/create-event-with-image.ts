@@ -1,4 +1,3 @@
-import fetch from 'node-fetch'
 import { uploadImageWithMetadata } from './upload-with-metadata'
 import {
 	EventData,
