@@ -69,11 +69,24 @@ import { extractImages } from './imageExtraction'
 
 					if (eventData.irrelevant === true) {
 						console.log('[SacIT] Event deemed irrelevant by AI')
-						showNotification(
+
+						// Create a dismissible notification
+						const reason = eventData.reason
+							? `: ${eventData.reason}`
+							: ''
+						const notification = showNotification(
 							'Event Not Relevant',
 							'info',
-							'This event was determined to be irrelevant for SacIT Central.'
+							`This event was determined to be irrelevant for SacIT Central${reason}`
 						)
+
+						// Make sure notification is dismissible after 5 seconds
+						setTimeout(() => {
+							if (notification && notification.parentNode) {
+								notification.style.display = 'none'
+							}
+						}, 5000)
+
 						showIrrelevantDialog(eventData)
 					} else {
 						showNotification(
