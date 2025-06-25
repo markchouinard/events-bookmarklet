@@ -30,49 +30,24 @@ const RASTER_FORMATS = [
 
 // Enhanced image validation
 const isValidImageUrl = (url: string): boolean => {
-	// Ensure url is a string
-	if (!url || typeof url !== 'string') {
+	if (!url || url.trim() === '') {
+		console.log('[SacIT] Invalid URL: empty')
 		return false
 	}
 
-	if (url.trim() === '' || url.startsWith('data:image/svg+xml;base64,')) {
+	if (url.startsWith('data:image/svg+xml;base64,')) {
+		console.log('[SacIT] Invalid URL: SVG base64')
 		return false
 	}
 
-	// Skip common non-content images
-	const skipPatterns = [
-		/\/icon/i,
-		/\/logo/i,
-		/\/avatar/i,
-		/\/profile/i,
-		/\/thumb/i,
-		/pixel\.gif/i,
-		/spacer\./i,
-		/blank\./i,
-		/transparent\./i,
-		/1x1\./i,
-		/tracking/i,
-		/analytics/i,
-	]
-
-	if (skipPatterns.some((pattern) => pattern.test(url))) {
+	// Skip logos but allow Eventbrite images
+	if (url.includes('/logo') && !url.includes('evbuc.com')) {
+		console.log('[SacIT] Invalid URL: logo')
 		return false
 	}
 
-	// Check if URL has a supported image extension
-	const urlWithoutQuery = url.split('?')[0].toLowerCase()
-	const hasImageExtension = SUPPORTED_IMAGE_FORMATS.some((ext) =>
-		urlWithoutQuery.endsWith(`.${ext}`)
-	)
-
-	// Also accept URLs that might be images but don't have extensions (like some CDN URLs)
-	const mightBeImage =
-		url.includes('/image/') ||
-		url.includes('/img/') ||
-		url.includes('/photo/') ||
-		url.includes('/picture/')
-
-	return hasImageExtension || mightBeImage
+	console.log('[SacIT] ✅ URL passed validation:', url)
+	return true
 }
 
 // Get image format from URL
@@ -359,6 +334,172 @@ export const extractImages = async (): Promise<ImageInfo[]> => {
 		if (window.location.hostname.includes('meetup.com')) {
 			debugMeetupImages()
 		}
+	}
+	// Add Eventbrite support
+	else if (window.location.href.includes('eventbrite.com')) {
+		console.log(
+			'[SacIT] Detected Eventbrite site, using specialized extraction'
+		)
+
+		// Method 1: JSON-LD structured data
+		try {
+			const jsonLdScripts = document.querySelectorAll(
+				'script[type="application/ld+json"]'
+			)
+			for (const script of Array.from(jsonLdScripts)) {
+				try {
+					if (script.textContent) {
+						const data = JSON.parse(script.textContent)
+						if (
+							data.image &&
+							typeof data.image === 'string' &&
+							isValidImageUrl(data.image)
+						) {
+							console.log(
+								'[SacIT] Found image in JSON-LD:',
+								data.image
+							)
+							images.push({
+								url: data.image,
+								alt: data.name || 'Event image',
+								dimensions: 'unknown',
+								format: getImageFormat(data.image),
+							})
+						}
+					}
+				} catch (e) {
+					console.error('[SacIT] Error parsing JSON-LD:', e)
+				}
+			}
+		} catch (e) {
+			console.error('[SacIT] Error extracting from JSON-LD:', e)
+		}
+
+		// Method 2: Eventbrite-specific selectors
+		const eventbriteSelectors = [
+			// Add these NEW selectors based on the HTML you found:
+			'img[data-testid="hero-img"]', // ← Main hero image
+			'picture[data-testid="hero-image"] img', // ← Picture element img
+			'.event-hero img', // ← Event hero container
+			'.css-1mghjxa', // ← The specific CSS class
+
+			// Keep existing selectors as fallbacks:
+			'.event-hero__image img',
+			'.event-card-image img',
+			'.structured-content-rich-text img',
+			'.event-details__data img',
+			'.js-d-scroll-target img',
+			'img[src*="eventbrite"]',
+			'img[src*="eb.com"]',
+			'img[alt*="event"]',
+			'img[alt*="Event"]',
+		]
+
+		for (const selector of eventbriteSelectors) {
+			const elements = document.querySelectorAll(selector)
+			console.log(
+				`[SacIT] Eventbrite selector "${selector}" found ${elements.length} elements`
+			)
+
+			for (const el of Array.from(elements)) {
+				if (el instanceof HTMLImageElement && isValidImageUrl(el.src)) {
+					console.log(
+						`[SacIT] Processing Eventbrite image: ${el.src}`
+					)
+
+					try {
+						const { width, height, format } =
+							await getImageDimensions(el)
+						console.log(
+							`[SacIT] Image dimensions: ${width}x${height}, format: ${format}`
+						)
+
+						if (
+							(format === 'svg' && width >= 50 && height >= 50) ||
+							(format !== 'svg' && width >= 100 && height >= 100)
+						) {
+							console.log(
+								`[SacIT] ✅ Adding Eventbrite image: ${el.src}`
+							)
+							images.push({
+								url: el.src,
+								alt: el.alt || 'Event image',
+								dimensions: `${width}x${height}`,
+								format: format,
+							})
+						} else {
+							console.log(
+								`[SacIT] ❌ Rejecting image due to size/format: ${width}x${height}, ${format}`
+							)
+						}
+					} catch (error) {
+						console.error(
+							'[SacIT] ❌ Error getting image dimensions:',
+							error
+						)
+					}
+				} else {
+					console.log(`[SacIT] ❌ Image failed validation: ${el.src}`)
+				}
+			}
+		}
+
+		// Method 3: Open Graph and Twitter meta tags (same as Meetup)
+		const metaSelectors = [
+			'meta[property="og:image"]',
+			'meta[property="og:image:url"]',
+			'meta[name="twitter:image"]',
+			'meta[name="twitter:image:src"]',
+		]
+
+		for (const selector of metaSelectors) {
+			const metaTag = document.querySelector(selector)
+			if (metaTag) {
+				const imageUrl = metaTag.getAttribute('content')
+				if (imageUrl && isValidImageUrl(imageUrl)) {
+					console.log(
+						`[SacIT] Found Eventbrite meta image (${selector}):`,
+						imageUrl
+					)
+					images.push({
+						url: imageUrl,
+						alt: 'Meta tag image',
+						dimensions: 'unknown',
+						format: getImageFormat(imageUrl),
+					})
+				}
+			}
+		}
+
+		// Method 4: Background images
+		const eventbriteBanners = document.querySelectorAll(
+			'.event-hero, .event-hero__background, .hero-image, .event-card, .structured-content-rich-text'
+		)
+
+		for (const el of Array.from(eventbriteBanners)) {
+			const style = window.getComputedStyle(el)
+			const bgImage = style.backgroundImage
+			if (bgImage && bgImage !== 'none') {
+				const match = bgImage.match(/url\(['"]?(.*?)['"]?\)/)
+				if (match && match[1] && isValidImageUrl(match[1])) {
+					console.log(
+						'[SacIT] Found Eventbrite background image:',
+						match[1]
+					)
+					images.push({
+						url: match[1],
+						alt: 'Background image',
+						dimensions: `${el.clientWidth}x${el.clientHeight}`,
+						format: getImageFormat(match[1]),
+					})
+				}
+			}
+		}
+
+		// Debug function for Eventbrite
+		if (window.location.hostname.includes('eventbrite.com')) {
+			debugEventbriteImages()
+		}
 	} else {
 		// Enhanced standard image extraction
 		const imgTags = document.querySelectorAll('img')
@@ -477,4 +618,39 @@ const debugMeetupImages = () => {
 		}
 	})
 	console.log(`[SacIT] Found ${bgImageCount} elements with background images`)
+}
+
+// Add Eventbrite debug function
+const debugEventbriteImages = () => {
+	console.log('[SacIT] DEBUG: Analyzing Eventbrite page structure')
+
+	// Print relevant meta tags
+	const metaTags = document.querySelectorAll('meta')
+	console.log(`[SacIT] Found ${metaTags.length} meta tags`)
+	Array.from(metaTags).forEach((meta) => {
+		if (
+			meta.getAttribute('property')?.includes('image') ||
+			meta.getAttribute('name')?.includes('image')
+		) {
+			console.log('Meta image tag:', meta.outerHTML)
+		}
+	})
+
+	// Print all decent-sized images
+	const allImages = document.querySelectorAll('img')
+	console.log(`[SacIT] Found ${allImages.length} img elements`)
+	Array.from(allImages).forEach((img) => {
+		if (img.src && img.width > 50 && img.height > 50) {
+			const format = getImageFormat(img.src)
+			console.log(
+				`Image: ${img.src} (${img.width}x${img.height}) format: ${format} alt="${img.alt}"`
+			)
+		}
+	})
+
+	// Check for JSON-LD
+	const jsonLdElements = document.querySelectorAll(
+		'script[type="application/ld+json"]'
+	)
+	console.log(`[SacIT] Found ${jsonLdElements.length} JSON-LD elements`)
 }
