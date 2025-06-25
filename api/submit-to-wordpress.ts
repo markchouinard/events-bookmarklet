@@ -32,24 +32,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			})
 		}
 
-		console.log(`Submitting event to WordPress: ${eventData.title}`)
+		console.log(`🔥 Submitting event to WordPress: ${eventData.title}`)
 
 		// WordPress API configuration
 		const wpApiUrl = process.env.WP_API_URL
 		const username = process.env.WP_USERNAME
 		const appPassword = process.env.WP_APP_PASSWORD
 
+		console.log('🔧 WordPress config:', {
+			wpApiUrl: wpApiUrl ? 'SET' : 'MISSING',
+			username: username ? 'SET' : 'MISSING',
+			appPassword: appPassword ? 'SET' : 'MISSING',
+		})
+
 		if (!wpApiUrl || !username || !appPassword) {
-			throw new Error('Missing WordPress API configuration')
+			throw new Error(
+				`Missing WordPress API configuration: wpApiUrl=${!!wpApiUrl}, username=${!!username}, appPassword=${!!appPassword}`
+			)
 		}
 
 		// Create Basic Auth header
 		const auth = Buffer.from(`${username}:${appPassword}`).toString(
 			'base64'
 		)
+		const wpEndpoint = `${wpApiUrl}/wp/v2/tribe_events`
+
+		console.log('🎯 WordPress endpoint:', wpEndpoint)
 
 		// Submit to WordPress
-		const response = await fetch(`${wpApiUrl}/wp/v2/tribe_events`, {
+		const response = await fetch(wpEndpoint, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -69,14 +80,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			}),
 		})
 
+		console.log('📡 WordPress response status:', response.status)
+
 		if (!response.ok) {
 			const errorText = await response.text()
+			console.error('❌ WordPress API error:', errorText)
 			throw new Error(
 				`WordPress API error: ${response.status} - ${errorText}`
 			)
 		}
 
 		const wpResult = await response.json()
+		console.log('✅ WordPress success:', wpResult)
 
 		return res.json({
 			success: true,
@@ -85,7 +100,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			wpEventUrl: wpResult.link,
 		})
 	} catch (error) {
-		console.error('Error submitting to WordPress:', error)
+		console.error('💥 Error submitting to WordPress:', error)
 		return res.status(500).json({
 			success: false,
 			message: 'Failed to submit event to WordPress',
