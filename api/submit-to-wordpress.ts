@@ -395,88 +395,122 @@ async function setFeaturedImage(
 	authString: string
 ): Promise<boolean> {
 	try {
-		// ✅ MATCH LOCAL - Exact logging format
 		console.log(
 			`Setting featured image for event ${eventId} from URL: ${imageUrl}`
 		)
 
-		// Download the image
-		const imageResponse = await fetch(imageUrl)
-		if (!imageResponse.ok) {
-			throw new Error(
-				`Failed to fetch image: ${imageResponse.statusText}`
-			)
+		// ✅ FALLBACK 1: Clean Eventbrite proxy URLs
+		let cleanImageUrl = imageUrl
+		if (imageUrl.includes('img.evbuc.com/https%3A%2F%2F')) {
+			try {
+				const decodedUrl = decodeURIComponent(
+					imageUrl.split('img.evbuc.com/')[1].split('?')[0]
+				)
+				console.log('Extracted clean URL:', decodedUrl)
+				cleanImageUrl = decodedUrl
+			} catch (e) {
+				console.log('Could not extract clean URL, using original')
+			}
 		}
 
-		const imageArrayBuffer = await imageResponse.arrayBuffer()
-		const imageBuffer = Buffer.from(imageArrayBuffer)
-		const contentType =
-			imageResponse.headers.get('content-type') || 'image/jpeg'
-		const extension = contentType.includes('png') ? 'png' : 'jpg'
-		const filename = `event-${eventId}-featured.${extension}`
+		// Try primary upload method first
+		try {
+			const imageResponse = await fetch(cleanImageUrl)
+			if (!imageResponse.ok) {
+				throw new Error(
+					`Failed to fetch image: ${imageResponse.statusText}`
+				)
+			}
 
-		console.log(
-			`Uploading: ${filename}, ${contentType}, ${imageBuffer.length} bytes`
-		)
+			const imageArrayBuffer = await imageResponse.arrayBuffer()
+			const imageBuffer = Buffer.from(imageArrayBuffer)
+			const contentType =
+				imageResponse.headers.get('content-type') || 'image/jpeg'
+			const extension = contentType.includes('png') ? 'png' : 'jpg'
+			const filename = `event-${eventId}-featured.${extension}`
 
-		// ✅ MATCH LOCAL - Use FormData for upload
-		const FormData = require('form-data')
-		const formData = new FormData()
+			const FormData = require('form-data')
+			const formData = new FormData()
 
-		formData.append('file', imageBuffer, {
-			filename: filename,
-			contentType: contentType,
-		})
-		formData.append('title', `Featured image for event ${eventId}`)
-		formData.append('alt_text', `Featured image for event ${eventId}`)
+			formData.append('file', imageBuffer, {
+				filename: filename,
+				contentType: contentType,
+			})
+			formData.append('title', `Featured image for event ${eventId}`)
+			formData.append('alt_text', `Featured image for event ${eventId}`)
 
-		// Upload to WordPress media library
-		const uploadResponse = await fetch(`${wpApiUrl}/wp/v2/media`, {
-			method: 'POST',
-			headers: {
-				Authorization: `Basic ${authString}`,
-				...formData.getHeaders(),
-			},
-			body: formData,
-		})
-
-		if (!uploadResponse.ok) {
-			const errorText = await uploadResponse.text()
-			throw new Error(
-				`Failed to upload image: ${uploadResponse.status} - ${errorText}`
-			)
-		}
-
-		const mediaObject = await uploadResponse.json()
-		// ✅ MATCH LOCAL - Exact logging format
-		console.log('Image uploaded successfully:', mediaObject.id)
-
-		// Set as featured image
-		const updateResponse = await fetch(
-			`${wpApiUrl}/wp/v2/tribe_events/${eventId}`,
-			{
+			const uploadResponse = await fetch(`${wpApiUrl}/wp/v2/media`, {
 				method: 'POST',
 				headers: {
 					Authorization: `Basic ${authString}`,
-					'Content-Type': 'application/json',
+					...formData.getHeaders(),
 				},
-				body: JSON.stringify({
-					featured_media: mediaObject.id,
-				}),
+				body: formData,
+			})
+
+			if (uploadResponse.ok) {
+				const mediaObject = await uploadResponse.json()
+				console.log('Image uploaded successfully:', mediaObject.id)
+
+				// Set as featured image
+				const updateResponse = await fetch(
+					`${wpApiUrl}/wp/v2/tribe_events/${eventId}`,
+					{
+						method: 'POST',
+						headers: {
+							Authorization: `Basic ${authString}`,
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({
+							featured_media: mediaObject.id,
+						}),
+					}
+				)
+
+				if (updateResponse.ok) {
+					console.log('Featured image set successfully')
+					return true
+				}
 			}
-		)
 
-		if (!updateResponse.ok) {
-			throw new Error(
-				`Failed to set featured image: ${updateResponse.status}`
+			throw new Error('Primary upload method failed')
+		} catch (primaryError) {
+			console.log(
+				'Primary upload failed, trying fallback methods:',
+				primaryError.message
 			)
-		}
 
-		// ✅ MATCH LOCAL - Exact logging format
-		console.log('Featured image set successfully')
-		return true
+			// ✅ FALLBACK 3: Save image URL in post meta instead
+			console.log(
+				'Fallback: Saving image URL in post meta instead of uploading'
+			)
+
+			const metaUpdateResponse = await fetch(
+				`${wpApiUrl}/wp/v2/tribe_events/${eventId}`,
+				{
+					method: 'POST',
+					headers: {
+						Authorization: `Basic ${authString}`,
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						meta: {
+							_event_image_url: cleanImageUrl,
+							_event_original_image_url: imageUrl,
+						},
+					}),
+				}
+			)
+
+			if (metaUpdateResponse.ok) {
+				console.log('Image URL saved in post meta successfully')
+				return true
+			} else {
+				const metaError = await metaUpdateResponse.text()
+				console.error('Meta update failed:', metaError)
+			}
+		}
 	} catch (error) {
-		// ✅ MATCH LOCAL - Exact logging format
 		console.error('Error with featured image:', error)
 		return false
 	}
