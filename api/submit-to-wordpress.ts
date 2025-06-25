@@ -90,12 +90,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			enhancedDescription += `\n\n<p><strong>Original Event:</strong> <a href="${eventData.url}" target="_blank" rel="noopener">View on ${domain}</a></p>`
 		}
 
-		// ✅ UPDATE EVENT PAYLOAD - Use formatted dates
+		// 4. Create event payload
 		const requestBody = {
 			title: eventData.title,
 			description: enhancedDescription,
-			start_date: formatDate(startDate), // ← Use formatted date
-			end_date: formatDate(endDate), // ← Use formatted date
+			start_date: formatDate(startDate),
+			end_date: formatDate(endDate),
 			timezone: eventData.timezone || 'America/Los_Angeles',
 			all_day: eventData.all_day || false,
 			cost: eventData.cost || '',
@@ -107,6 +107,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			status: 'draft',
 		}
 
+		// ✅ MATCH LOCAL - Detailed payload logging
+		console.log('=== MINIMAL PAYLOAD ===')
+		console.log(JSON.stringify(requestBody, null, 2))
+
+		// ✅ MATCH LOCAL - Detailed response logging
 		console.log('📝 Creating event...')
 		const response = await fetch(`${wpApiUrl}/tribe/events/v1/events`, {
 			method: 'POST',
@@ -117,14 +122,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			body: JSON.stringify(requestBody),
 		})
 
+		// ✅ MATCH LOCAL - Exact response handling
+		console.log('=== RESPONSE ===')
+		console.log('Status:', response.status)
+		console.log('Status Text:', response.statusText)
+
+		// Read the response body ONCE
+		const responseText = await response.text()
+		console.log('Response Body:', responseText)
+
 		if (!response.ok) {
-			const errorText = await response.text()
-			throw new Error(
-				`WordPress API error: ${response.status} - ${errorText}`
-			)
+			throw new Error(`API Error: ${response.status} - ${responseText}`)
 		}
 
-		const wpResult = await response.json()
+		// Parse the response text (don't use response.json() after response.text())
+		let wpResult
+		try {
+			wpResult = JSON.parse(responseText)
+		} catch (parseError) {
+			throw new Error(`Failed to parse response: ${parseError.message}`)
+		}
+
 		console.log('✅ Event created:', wpResult.id)
 
 		// 5. Add tags in separate request
