@@ -3,11 +3,11 @@
 import { showNotification } from './components/Notifications'
 import { showEventResult } from './components/EventDialog'
 import { showIrrelevantDialog } from './components/IrrelevantDialog'
-import { extractImages } from './extractors/ImageExtractor'
 import { extractEventData } from './services/ApiService'
 import { parseEventData } from './utils/Parser'
 import { EventData } from './types'
 import { showEnvironmentBadge } from './utils/UIUtils'
+import { extractImages } from './imageExtraction'
 
 // ✅ KEEP ORIGINAL STRUCTURE - Just add Sentry context and error capture
 ;(async function () {
