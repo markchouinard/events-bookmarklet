@@ -41,16 +41,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			throw new Error('Missing start_date')
 		}
 
+		// ✅ ADD DATE PROCESSING - Match local version exactly
+		const startDate = new Date(eventData.start_date)
+		const endDate = eventData.end_date
+			? new Date(eventData.end_date)
+			: new Date(startDate.getTime() + 3600000) // Add 1 hour if no end date
+
+		// Check if dates are valid
+		if (isNaN(startDate.getTime())) {
+			throw new Error(`Invalid start_date: ${eventData.start_date}`)
+		}
+		if (isNaN(endDate.getTime())) {
+			throw new Error(`Invalid end_date: ${eventData.end_date}`)
+		}
+
+		console.log('=== PARSED DATES ===')
+		console.log('startDate:', startDate)
+		console.log('endDate:', endDate)
+
 		// WordPress API configuration
 		const wpApiUrl = process.env.WP_API_URL
 		const username = process.env.WP_USERNAME
 		const appPassword = process.env.WP_APP_PASSWORD
-
-		if (!wpApiUrl || !username || !appPassword) {
-			throw new Error(`Missing WordPress config`)
-		}
-
-		// Create Basic Auth header
 		const auth = Buffer.from(`${username}:${appPassword}`).toString(
 			'base64'
 		)
@@ -76,39 +88,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			enhancedDescription += `\n\n<p><strong>Original Event:</strong> <a href="${eventData.url}" target="_blank" rel="noopener">View on ${domain}</a></p>`
 		}
 
-		// 4. Create event payload
-		const startDate = new Date(eventData.start_date)
-		const endDate = eventData.end_date
-			? new Date(eventData.end_date)
-			: new Date(startDate.getTime() + 3600000)
-
-		// Check if dates are valid
-		if (isNaN(startDate.getTime())) {
-			throw new Error(`Invalid start_date: ${eventData.start_date}`)
-		}
-		if (isNaN(endDate.getTime())) {
-			throw new Error(`Invalid end_date: ${eventData.end_date}`)
-		}
-
-		console.log('=== PARSED DATES ===')
-		console.log('startDate:', startDate)
-		console.log('endDate:', endDate)
-
-		const formatDate = (date: Date): string => {
-			const year = date.getFullYear()
-			const month = String(date.getMonth() + 1).padStart(2, '0')
-			const day = String(date.getDate()).padStart(2, '0')
-			const hours = String(date.getHours()).padStart(2, '0')
-			const minutes = String(date.getMinutes()).padStart(2, '0')
-			const seconds = String(date.getSeconds()).padStart(2, '0')
-			return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
-		}
-
+		// ✅ UPDATE EVENT PAYLOAD - Use formatted dates
 		const requestBody = {
 			title: eventData.title,
 			description: enhancedDescription,
-			start_date: formatDate(startDate),
-			end_date: formatDate(endDate),
+			start_date: formatDate(startDate), // ← Use formatted date
+			end_date: formatDate(endDate), // ← Use formatted date
 			timezone: eventData.timezone || 'America/Los_Angeles',
 			all_day: eventData.all_day || false,
 			cost: eventData.cost || '',
@@ -186,6 +171,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			error: error.message,
 		})
 	}
+}
+
+// ✅ ADD FORMAT DATE FUNCTION - Match local version exactly
+function formatDate(date: Date): string {
+	const year = date.getFullYear()
+	const month = String(date.getMonth() + 1).padStart(2, '0')
+	const day = String(date.getDate()).padStart(2, '0')
+	const hours = String(date.getHours()).padStart(2, '0')
+	const minutes = String(date.getMinutes()).padStart(2, '0')
+	const seconds = String(date.getSeconds()).padStart(2, '0')
+	return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
 // Inline utility functions
