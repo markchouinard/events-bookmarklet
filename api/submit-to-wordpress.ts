@@ -25,17 +25,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		console.log('🚀 Starting WordPress submission...')
 
 		const { eventData } = req.body
-		console.log(
-			'📦 Received eventData:',
-			JSON.stringify(eventData, null, 2)
-		)
 
-		if (!eventData || !eventData.title || !eventData.start_date) {
-			console.log('❌ Missing required event data')
-			return res.status(400).json({
-				success: false,
-				message: 'Missing required event data',
-			})
+		// ✅ MATCH LOCAL VERSION - Detailed logging
+		console.log('=== RECEIVED EVENT DATA ===')
+		console.log(JSON.stringify(eventData, null, 2))
+
+		// ✅ MATCH LOCAL VERSION - Individual field validation
+		if (!eventData) {
+			throw new Error('Missing eventData')
+		}
+		if (!eventData.title) {
+			throw new Error('Missing title')
+		}
+		if (!eventData.start_date) {
+			throw new Error('Missing start_date')
 		}
 
 		// WordPress API configuration
