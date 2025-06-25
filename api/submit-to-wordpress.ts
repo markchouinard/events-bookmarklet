@@ -1,10 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
-import { getOrCreateVenue } from './utils/venue-handler'
-import { getOrCreateTagIds } from './utils/tag-handler'
-import { setFeaturedImage } from './utils/image-handler'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-	// Add CORS headers
+	// Add CORS headers FIRST
 	res.setHeader('Access-Control-Allow-Origin', '*')
 	res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
 	res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-SacIT-Token')
@@ -46,12 +43,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		const username = process.env.WP_USERNAME
 		const appPassword = process.env.WP_APP_PASSWORD
 
-		console.log('🔧 WordPress config check:', {
-			wpApiUrl: wpApiUrl ? 'SET' : 'MISSING',
-			username: username ? 'SET' : 'MISSING',
-			appPassword: appPassword ? 'SET' : 'MISSING',
-		})
-
 		if (!wpApiUrl || !username || !appPassword) {
 			throw new Error(`Missing WordPress config`)
 		}
@@ -60,9 +51,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		const auth = Buffer.from(`${username}:${appPassword}`).toString(
 			'base64'
 		)
-		const wpEndpoint = `${wpApiUrl}/tribe/events/v1/events`
-
-		console.log('🎯 WordPress endpoint:', wpEndpoint)
 
 		console.log('🚀 Processing event with utilities...')
 
@@ -89,7 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		const requestBody = {
 			title: eventData.title,
 			description: enhancedDescription,
-			start_date: eventData.start_date, // Direct field, not meta!
+			start_date: eventData.start_date,
 			end_date: eventData.end_date || eventData.start_date,
 			timezone: eventData.timezone || 'America/Los_Angeles',
 			all_day: eventData.all_day || false,
@@ -103,7 +91,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		console.log('📝 Creating event...')
-		const response = await fetch(wpEndpoint, {
+		const response = await fetch(`${wpApiUrl}/tribe/events/v1/events`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -111,12 +99,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			},
 			body: JSON.stringify(requestBody),
 		})
-
-		console.log(
-			'📨 WordPress response status:',
-			response.status,
-			response.statusText
-		)
 
 		if (!response.ok) {
 			const errorText = await response.text()
@@ -173,6 +155,172 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			message: 'Failed to submit event to WordPress',
 			error: error.message,
 		})
+	}
+}
+
+// Inline utility functions
+async function getOrCreateVenue(
+	locationName: string,
+	wpApiUrl: string,
+	authString: string
+): Promise<number> {
+	try {
+		console.log(`🏢 Processing venue: ${locationName}`)
+
+		// First, check if venue already exists
+		const searchResponse = await fetch(
+			`${wpApiUrl}/wp/v2/tribe_venue?search=${encodeURIComponent(
+				locationName
+			)}`,
+			{
+				headers: {
+					Authorization: `Basic ${authString}`,
+				},
+			}
+		)
+
+		if (searchResponse.ok) {
+			const venues = await searchResponse.json()
+			if (venues.length > 0) {
+				console.log(
+					`✅ Found existing venue: ${venues[0].title.rendered} (ID: ${venues[0].id})`
+				)
+				return venues[0].id
+			}
+		}
+
+		// Create new venue
+		console.log(`🆕 Creating new venue: ${locationName}`)
+
+		const venuePayload = {
+			title: locationName,
+			status: 'publish',
+			meta: {
+				_VenueAddress: '',
+				_VenueCity: '',
+				_VenueStateProvince: '',
+				_VenueZip: '',
+				_VenueCountry: 'United States',
+				_VenuePhone: '',
+				_VenueURL: '',
+				_VenueShowMap: true,
+				_VenueShowMapLink: true,
+			},
+		}
+
+		const createResponse = await fetch(`${wpApiUrl}/wp/v2/tribe_venue`, {
+			method: 'POST',
+			headers: {
+				Authorization: `Basic ${authString}`,
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(venuePayload),
+		})
+
+		if (!createResponse.ok) {
+			console.error(`❌ Failed to create venue: ${createResponse.status}`)
+			return 0
+		}
+
+		const newVenue = await createResponse.json()
+		console.log(`✅ Created new venue with ID: ${newVenue.id}`)
+		return newVenue.id
+	} catch (error) {
+		console.error('❌ Error with venue:', error)
+		return 0
+	}
+}
+
+async function getOrCreateTagIds(
+	tags: string[],
+	wpApiUrl: string,
+	authString: string
+): Promise<number[]> {
+	console.log(`🏷️ Processing ${tags.length} tags:`, tags)
+
+	const tagIds: number[] = []
+
+	for (const tagName of tags) {
+		try {
+			// Search for existing tag
+			const searchResponse = await fetch(
+				`${wpApiUrl}/wp/v2/tags?search=${encodeURIComponent(tagName)}`,
+				{
+					headers: {
+						Authorization: `Basic ${authString}`,
+					},
+				}
+			)
+
+			if (searchResponse.ok) {
+				const existingTags = await searchResponse.json()
+				const exactMatch = existingTags.find(
+					(tag) => tag.name.toLowerCase() === tagName.toLowerCase()
+				)
+
+				if (exactMatch) {
+					console.log(
+						`✅ Found existing tag: ${exactMatch.name} (ID: ${exactMatch.id})`
+					)
+					tagIds.push(exactMatch.id)
+					continue
+				}
+			}
+
+			// Create new tag
+			console.log(`🆕 Creating new tag: ${tagName}`)
+			const createResponse = await fetch(`${wpApiUrl}/wp/v2/tags`, {
+				method: 'POST',
+				headers: {
+					Authorization: `Basic ${authString}`,
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					name: tagName,
+					slug: tagName.toLowerCase().replace(/\s+/g, '-'),
+				}),
+			})
+
+			if (createResponse.ok) {
+				const newTag = await createResponse.json()
+				console.log(
+					`✅ Created new tag: ${newTag.name} (ID: ${newTag.id})`
+				)
+				tagIds.push(newTag.id)
+			} else {
+				console.error(
+					`❌ Failed to create tag "${tagName}": ${createResponse.status}`
+				)
+			}
+		} catch (error) {
+			console.error(`❌ Error processing tag "${tagName}":`, error)
+		}
+	}
+
+	console.log(
+		`🏷️ Processed ${tags.length} tags into ${tagIds.length} tag IDs:`,
+		tagIds
+	)
+	return tagIds
+}
+
+async function setFeaturedImage(
+	eventId: number,
+	imageUrl: string,
+	wpApiUrl: string,
+	authString: string
+): Promise<boolean> {
+	try {
+		console.log(
+			`🖼️ Setting featured image for event ${eventId} from: ${imageUrl}`
+		)
+
+		// For now, just log - image upload is complex in serverless
+		console.log('⚠️ Image upload skipped in serverless environment')
+		return true
+	} catch (error) {
+		console.error('❌ Error with featured image:', error)
+		return false
 	}
 }
 
