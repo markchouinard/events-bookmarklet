@@ -77,11 +77,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		// 4. Create event payload
+		const startDate = new Date(eventData.start_date)
+		const endDate = eventData.end_date
+			? new Date(eventData.end_date)
+			: new Date(startDate.getTime() + 3600000)
+
+		// Check if dates are valid
+		if (isNaN(startDate.getTime())) {
+			throw new Error(`Invalid start_date: ${eventData.start_date}`)
+		}
+		if (isNaN(endDate.getTime())) {
+			throw new Error(`Invalid end_date: ${eventData.end_date}`)
+		}
+
+		console.log('=== PARSED DATES ===')
+		console.log('startDate:', startDate)
+		console.log('endDate:', endDate)
+
+		const formatDate = (date: Date): string => {
+			const year = date.getFullYear()
+			const month = String(date.getMonth() + 1).padStart(2, '0')
+			const day = String(date.getDate()).padStart(2, '0')
+			const hours = String(date.getHours()).padStart(2, '0')
+			const minutes = String(date.getMinutes()).padStart(2, '0')
+			const seconds = String(date.getSeconds()).padStart(2, '0')
+			return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+		}
+
 		const requestBody = {
 			title: eventData.title,
 			description: enhancedDescription,
-			start_date: eventData.start_date,
-			end_date: eventData.end_date || eventData.start_date,
+			start_date: formatDate(startDate),
+			end_date: formatDate(endDate),
 			timezone: eventData.timezone || 'America/Los_Angeles',
 			all_day: eventData.all_day || false,
 			cost: eventData.cost || '',
