@@ -13,9 +13,8 @@ const environment = process.env.NODE_ENV || 'development'
 let apiUrl
 switch (environment) {
 	case 'production':
-		apiUrl = process.env.VERCEL_URL
-			? `https://${process.env.VERCEL_URL}/extract-event`
-			: 'https://events-bookmarklet.vercel.app/extract-event'
+		// Use your stable domains URL, not VERCEL_URL
+		apiUrl = 'https://events-bookmarklet.vercel.app/extract-event'
 		break
 	case 'staging':
 		apiUrl = 'https://stage.sacitcentral.com/extract-event'
