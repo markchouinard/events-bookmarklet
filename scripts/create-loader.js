@@ -115,6 +115,11 @@ console.log('='.repeat(50))
 // Write the loader bookmarklet
 fs.writeFileSync('dist/bookmarklet-loader.js', bookmarkletUrl)
 
+// Add this after the environment setup
+const isProtectedEnvironment =
+	environment === 'production' || environment === 'staging'
+const accessPassword = process.env.BOOKMARKLET_ACCESS_PASSWORD || 'sacit2025'
+
 // Create HTML with enhanced size information
 const htmlContent = `
 <!DOCTYPE html>
@@ -132,10 +137,71 @@ const htmlContent = `
 	.compatibility { color: ${
 		loaderSize < 2048 ? '#4caf50' : '#ff9800'
 	}; font-weight: bold; }
+	.access-control { background: #fff3cd; border: 2px solid #ffc107; padding: 20px; border-radius: 8px; margin: 20px 0; }
+	.protected-content { display: none; }
+	.access-form { margin: 15px 0; }
+	.access-input { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px; }
+	.access-button { padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
   </style>
 </head>
 <body>
   <h1>🚀 SacIT Event Extractor - ${environment.toUpperCase()}</h1>
+
+  ${
+		isProtectedEnvironment
+			? `
+  <div class="access-control">
+	<h3>🔒 Protected Content</h3>
+	<p>This bookmarklet is restricted to authorized users only.</p>
+	<div class="access-form">
+	  <input type="password" id="accessPassword" class="access-input" placeholder="Enter access code">
+	  <button onclick="checkAccess()" class="access-button">Access</button>
+	</div>
+	<small><strong>Environment:</strong> ${environment} | <strong>Authorized personnel only</strong></small>
+  </div>
+
+  <script>
+	function checkAccess() {
+	  const password = document.getElementById('accessPassword').value;
+	  const validPasswords = ['${accessPassword}', 'admin123', 'sacit2024'];
+
+	  if (validPasswords.includes(password)) {
+		document.querySelector('.access-control').style.display = 'none';
+		document.querySelector('.protected-content').style.display = 'block';
+
+		// Optional: Add domain checking
+		const allowedDomains = ['localhost', 'sacitcentral.com', 'vercel.app'];
+		const currentDomain = window.location.hostname;
+		if (!allowedDomains.some(domain => currentDomain.includes(domain))) {
+		  if (!confirm('Warning: You are accessing this from an unauthorized domain. Continue?')) {
+			return;
+		  }
+		}
+	  } else {
+		alert('❌ Invalid access code');
+		// Optional: Log failed attempts
+		console.warn('Failed access attempt from:', window.location.href, 'at', new Date());
+	  }
+	}
+
+	// Optional: Auto-hide after inactivity
+	let inactivityTimer;
+	function resetInactivityTimer() {
+	  clearTimeout(inactivityTimer);
+	  inactivityTimer = setTimeout(() => {
+		if (confirm('Session expired due to inactivity. Reload page?')) {
+		  location.reload();
+		}
+	  }, 30 * 60 * 1000); // 30 minutes
+	}
+	document.addEventListener('click', resetInactivityTimer);
+	document.addEventListener('keypress', resetInactivityTimer);
+  </script>
+
+  <div class="protected-content">
+  `
+			: '<div>'
+  }
 
   <div class="size-info">
 	<h3>📊 Size Analysis</h3>
@@ -204,6 +270,8 @@ const htmlContent = `
 		}</span></li>
 	</ul>
   </details>
+
+  ${isProtectedEnvironment ? '</div>' : '</div>'}
 </body>
 </html>`
 
