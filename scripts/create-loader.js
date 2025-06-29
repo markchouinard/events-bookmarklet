@@ -62,12 +62,60 @@ const loaderCode = `
 // Create the bookmarklet URL
 const bookmarkletUrl = `javascript:${encodeURIComponent(loaderCode)}`
 
-console.log(`Loader bookmarklet size: ${bookmarkletUrl.length} characters`)
+// Get size information
+const loaderSize = bookmarkletUrl.length
+const loaderCodeSize = loaderCode.length
+const loaderSizeKB = (loaderSize / 1024).toFixed(2)
+
+// Check if full script exists and get its size
+let fullScriptSize = 0
+let fullScriptSizeKB = '0.00'
+try {
+	const fullScriptPath = path.join(
+		__dirname,
+		'..',
+		'dist',
+		'bookmarklet-full.js'
+	)
+	if (fs.existsSync(fullScriptPath)) {
+		const fullScriptContent = fs.readFileSync(fullScriptPath, 'utf8')
+		fullScriptSize = fullScriptContent.length
+		fullScriptSizeKB = (fullScriptSize / 1024).toFixed(2)
+	}
+} catch (error) {
+	console.warn('Could not read full script size:', error.message)
+}
+
+// Display size information
+console.log('\n📊 SIZE ANALYSIS:')
+console.log('='.repeat(50))
+console.log(
+	`🔹 Loader code size: ${loaderCodeSize.toLocaleString()} characters`
+)
+console.log(
+	`🔹 Loader bookmarklet: ${loaderSize.toLocaleString()} characters (${loaderSizeKB} KB)`
+)
+if (fullScriptSize > 0) {
+	console.log(
+		`🔹 Full script size: ${fullScriptSize.toLocaleString()} characters (${fullScriptSizeKB} KB)`
+	)
+	console.log(
+		`🔹 Size reduction: ${((1 - loaderSize / fullScriptSize) * 100).toFixed(
+			1
+		)}%`
+	)
+}
+console.log(
+	`🔹 Browser compatibility: ${
+		loaderSize < 2048 ? '✅ All browsers' : '⚠️  May have issues'
+	}`
+)
+console.log('='.repeat(50))
 
 // Write the loader bookmarklet
 fs.writeFileSync('dist/bookmarklet-loader.js', bookmarkletUrl)
 
-// Create HTML with the loader
+// Create HTML with enhanced size information
 const htmlContent = `
 <!DOCTYPE html>
 <html>
@@ -77,24 +125,57 @@ const htmlContent = `
 	body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
 	.bookmarklet { display: inline-block; padding: 12px 20px; background: #2196F3; color: white;
 				  text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: bold; }
-	.size-info { background: #e8f5e8; padding: 10px; border-radius: 4px; margin: 15px 0; }
+	.size-info { background: #e8f5e8; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #4caf50; }
+	.size-comparison { background: #f0f8ff; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #2196f3; }
+	.size-stat { display: inline-block; margin: 5px 15px 5px 0; padding: 5px 10px; background: #f5f5f5; border-radius: 4px; font-family: monospace; }
 	pre { background: #f5f5f5; padding: 15px; border-radius: 4px; overflow-x: auto; font-size: 12px; }
+	.compatibility { color: ${
+		loaderSize < 2048 ? '#4caf50' : '#ff9800'
+	}; font-weight: bold; }
   </style>
 </head>
 <body>
   <h1>🚀 SacIT Event Extractor - ${environment.toUpperCase()}</h1>
 
   <div class="size-info">
-	<strong>✅ Optimized Loader Version</strong><br>
-	Bookmarklet size: <strong>${
-		bookmarkletUrl.length
-	} characters</strong> (was ~26,000)<br>
-	Compatible with all browsers!
+	<h3>📊 Size Analysis</h3>
+	<div class="size-stat">Loader: <strong>${loaderSize.toLocaleString()}</strong> chars</div>
+	<div class="size-stat">Loader: <strong>${loaderSizeKB}</strong> KB</div>
+	${
+		fullScriptSize > 0
+			? `
+	<div class="size-stat">Full Script: <strong>${fullScriptSize.toLocaleString()}</strong> chars</div>
+	<div class="size-stat">Full Script: <strong>${fullScriptSizeKB}</strong> KB</div>
+	<div class="size-stat">Reduction: <strong>${(
+		(1 - loaderSize / fullScriptSize) *
+		100
+	).toFixed(1)}%</strong></div>
+	`
+			: ''
+	}
+	<br><br>
+	<span class="compatibility">
+	  ${
+			loaderSize < 2048
+				? '✅ Compatible with all browsers'
+				: '⚠️ May exceed some browser bookmark limits'
+		}
+	</span>
   </div>
 
   <p><strong>Drag this link to your bookmarks bar:</strong></p>
 
   <a href="${bookmarkletUrl}" class="bookmarklet">📌 SacIT Extract Event (${environment.toUpperCase()})</a>
+
+  <div class="size-comparison">
+	<h3>🔄 How the Loader Works</h3>
+	<ul>
+	  <li><strong>Step 1:</strong> Tiny loader bookmarklet (~${loaderSize} chars) executes instantly</li>
+	  <li><strong>Step 2:</strong> Shows loading indicator while fetching full functionality</li>
+	  <li><strong>Step 3:</strong> Dynamically loads complete script from: <code>${baseUrl}/bookmarklet-full.js</code></li>
+	  <li><strong>Step 4:</strong> Runs full event extraction with all features</li>
+	</ul>
+  </div>
 
   <div style="background-color: ${
 		environment === 'production'
@@ -104,33 +185,36 @@ const htmlContent = `
 			: '#d1e7dd'
   }; padding: 15px; margin: 20px 0; border-radius: 5px;">
 	<strong>Environment:</strong> ${environment}<br>
-	<strong>Loads from:</strong> ${baseUrl}/bookmarklet-full.js
-  </div>
-
-  <div>
-	<h2>How it works:</h2>
-	<ol>
-	  <li>Tiny loader bookmarklet (~${
-			Math.round(bookmarkletUrl.length / 100) * 100
-		} chars)</li>
-	  <li>Dynamically loads full functionality from server</li>
-	  <li>Runs complete event extraction</li>
-	  <li>Compatible with all browser bookmark limits</li>
-	</ol>
+	<strong>API Endpoint:</strong> ${baseUrl}/api/extract-event<br>
+	<strong>Full Script:</strong> ${baseUrl}/bookmarklet-full.js
   </div>
 
   <details style="margin-top: 30px;">
-	<summary>Technical Details</summary>
-	<h3>Loader Code:</h3>
+	<summary>📋 Technical Details</summary>
+	<h3>Loader Code (${loaderCodeSize} characters):</h3>
 	<pre>${loaderCode}</pre>
+
+	<h3>Size Breakdown:</h3>
+	<ul>
+	  <li>Raw loader code: ${loaderCodeSize.toLocaleString()} characters</li>
+	  <li>URL encoded: ${loaderSize.toLocaleString()} characters (${loaderSizeKB} KB)</li>
+	  <li>Browser bookmark limit: ~2,048 characters (most browsers)</li>
+	  <li>Status: <span class="compatibility">${
+			loaderSize < 2048 ? 'SAFE' : 'POTENTIAL ISSUES'
+		}</span></li>
+	</ul>
   </details>
 </body>
 </html>`
 
 fs.writeFileSync('dist/bookmarklet-loader.html', htmlContent)
 
-console.log('✅ Loader bookmarklet created!')
-console.log('✅ Size:', bookmarkletUrl.length, 'characters (previous: ~26,000)')
-console.log('✅ Files created:')
-console.log('   - dist/bookmarklet-loader.js')
-console.log('   - dist/bookmarklet-loader.html')
+console.log('\n✅ Loader bookmarklet created!')
+console.log(`📁 Files created:`)
+console.log(
+	`   - dist/bookmarklet-loader.js (${loaderSize.toLocaleString()} chars)`
+)
+console.log(`   - dist/bookmarklet-loader.html`)
+console.log(
+	'\n🎯 Ready to use! The loader will dynamically fetch the full functionality.'
+)
