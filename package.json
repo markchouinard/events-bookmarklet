@@ -4,15 +4,15 @@
 	"description": "",
 	"main": "index.js",
 	"type": "module",
-	"scripts": {
-		"build:ts": "tsc",
-		"build": "node scripts/bundle.js && node scripts/create-full-script.js && node scripts/create-loader.js",
-		"build:staging": "NODE_ENV=staging node scripts/bundle.js && NODE_ENV=staging node scripts/create-full-script.js && NODE_ENV=staging node scripts/create-loader.js",
-		"build:prod": "NODE_ENV=production node scripts/bundle.js && NODE_ENV=production node scripts/create-full-script.js && NODE_ENV=production node scripts/create-loader.js",
-		"vercel-build": "npm run build:prod",
-		"server:local": "NODE_TLS_REJECT_UNAUTHORIZED=0 tsx server.ts",
-		"start:local": "node scripts/bundle.js && NODE_TLS_REJECT_UNAUTHORIZED=0 tsx server.ts"
-	},
+  "scripts": {
+    "build:ts": "tsc",
+    "build": "node scripts/bundle.js && node scripts/create-full-script.js && node scripts/create-loader.js",
+    "build:staging": "NODE_ENV=staging node scripts/bundle.js && NODE_ENV=staging node scripts/create-full-script.js && NODE_ENV=staging node scripts/create-loader.js",
+    "build:prod": "NODE_ENV=production node scripts/bundle.js && NODE_ENV=production node scripts/create-full-script.js && NODE_ENV=production node scripts/create-loader.js",
+    "vercel-build": "npm run build:prod",
+    "server:local": "vercel dev",
+    "start:local": "node scripts/bundle.js && vercel dev"
+  },
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
