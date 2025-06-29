@@ -11,9 +11,7 @@ const environment = process.env.NODE_ENV || 'development'
 let baseUrl
 switch (environment) {
 	case 'production':
-		baseUrl = process.env.VERCEL_URL
-			? `https://${process.env.VERCEL_URL}`
-			: 'https://events-bookmarklet.vercel.app'
+		baseUrl = 'https://bookmarklet.sacitcentral.com'
 		break
 	case 'staging':
 		baseUrl = 'https://stage.sacitcentral.com'
