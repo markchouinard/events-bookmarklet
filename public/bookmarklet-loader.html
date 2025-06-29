@@ -1,0 +1,158 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SacIT Event Extractor - PRODUCTION (Loader Version)</title>
+  <style>
+	body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+	.bookmarklet { display: inline-block; padding: 12px 20px; background: #2196F3; color: white;
+				  text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: bold; }
+	.size-info { background: #e8f5e8; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #4caf50; }
+	.size-comparison { background: #f0f8ff; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #2196f3; }
+	.size-stat { display: inline-block; margin: 5px 15px 5px 0; padding: 5px 10px; background: #f5f5f5; border-radius: 4px; font-family: monospace; }
+	pre { background: #f5f5f5; padding: 15px; border-radius: 4px; overflow-x: auto; font-size: 12px; }
+	.compatibility { color: #4caf50; font-weight: bold; }
+	.access-control { background: #fff3cd; border: 2px solid #ffc107; padding: 20px; border-radius: 8px; margin: 20px 0; }
+	.protected-content { display: none; }
+	.access-form { margin: 15px 0; }
+	.access-input { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px; }
+	.access-button { padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>🚀 SacIT Event Extractor - PRODUCTION</h1>
+
+  
+  <div class="access-control">
+	<h3>🔒 Protected Content</h3>
+	<p>This bookmarklet is restricted to authorized users only.</p>
+	<div class="access-form">
+	  <input type="password" id="accessPassword" class="access-input" placeholder="Enter access code">
+	  <button onclick="checkAccess()" class="access-button">Access</button>
+	</div>
+	<small><strong>Environment:</strong> production | <strong>Authorized personnel only</strong></small>
+  </div>
+
+  <script>
+	function checkAccess() {
+	  const password = document.getElementById('accessPassword').value;
+	  const validPasswords = ['firewanderer', 'admin123', 'sacit2024'];
+
+	  if (validPasswords.includes(password)) {
+		document.querySelector('.access-control').style.display = 'none';
+		document.querySelector('.protected-content').style.display = 'block';
+
+		// Optional: Add domain checking
+		const allowedDomains = ['localhost', 'sacitcentral.com', 'vercel.app'];
+		const currentDomain = window.location.hostname;
+		if (!allowedDomains.some(domain => currentDomain.includes(domain))) {
+		  if (!confirm('Warning: You are accessing this from an unauthorized domain. Continue?')) {
+			return;
+		  }
+		}
+	  } else {
+		alert('❌ Invalid access code');
+		// Optional: Log failed attempts
+		console.warn('Failed access attempt from:', window.location.href, 'at', new Date());
+	  }
+	}
+
+	// Optional: Auto-hide after inactivity
+	let inactivityTimer;
+	function resetInactivityTimer() {
+	  clearTimeout(inactivityTimer);
+	  inactivityTimer = setTimeout(() => {
+		if (confirm('Session expired due to inactivity. Reload page?')) {
+		  location.reload();
+		}
+	  }, 30 * 60 * 1000); // 30 minutes
+	}
+	document.addEventListener('click', resetInactivityTimer);
+	document.addEventListener('keypress', resetInactivityTimer);
+  </script>
+
+  <div class="protected-content">
+  
+
+  <div class="size-info">
+	<h3>📊 Size Analysis</h3>
+	<div class="size-stat">Loader: <strong>1,537</strong> chars</div>
+	<div class="size-stat">Loader: <strong>1.50</strong> KB</div>
+	
+	<div class="size-stat">Full Script: <strong>18,979</strong> chars</div>
+	<div class="size-stat">Full Script: <strong>18.53</strong> KB</div>
+	<div class="size-stat">Reduction: <strong>91.9%</strong></div>
+	
+	<br><br>
+	<span class="compatibility">
+	  ✅ Compatible with all browsers
+	</span>
+  </div>
+
+  <p><strong>Drag this link to your bookmarks bar:</strong></p>
+
+  <a href="javascript:(function()%20%7B%0A%09%2F%2F%20Prevent%20multiple%20loads%0A%09if%20(window.sacitExtractorLoading)%20return%3B%0A%09window.sacitExtractorLoading%20%3D%20true%3B%0A%0A%09%2F%2F%20Show%20loading%20indicator%0A%09var%20loading%20%3D%20document.createElement('div')%3B%0A%09loading.id%20%3D%20'sacit-loader'%3B%0A%09loading.innerHTML%20%3D%20'%F0%9F%94%84%20Loading%20SacIT%20Extractor...'%3B%0A%09loading.style.cssText%20%3D%20'position%3Afixed%3Btop%3A20px%3Bright%3A20px%3Bbackground%3A%232196F3%3Bcolor%3Awhite%3Bpadding%3A10px%2015px%3Bborder-radius%3A4px%3Bz-index%3A10000%3Bfont-family%3AArial%2Csans-serif%3Bfont-size%3A14px%3B'%3B%0A%09document.body.appendChild(loading)%3B%0A%0A%09%2F%2F%20Load%20the%20full%20script%0A%09var%20script%20%3D%20document.createElement('script')%3B%0A%09script.src%20%3D%20'https%3A%2F%2Fbookmarklet.sacitcentral.com%2Fbookmarklet-full.js%3Fv%3D'%20%2B%20Date.now()%3B%0A%09script.onload%20%3D%20function()%20%7B%0A%09%09loading.remove()%3B%0A%09%09if%20(window.sacitExtractor)%20%7B%0A%09%09%09window.sacitExtractor.run()%3B%0A%09%09%7D%20else%20%7B%0A%09%09%09alert('Failed%20to%20load%20SacIT%20Extractor')%3B%0A%09%09%7D%0A%09%09window.sacitExtractorLoading%20%3D%20false%3B%0A%09%7D%3B%0A%09script.onerror%20%3D%20function()%20%7B%0A%09%09loading.innerHTML%20%3D%20'%E2%9D%8C%20Failed%20to%20load'%3B%0A%09%09setTimeout(()%20%3D%3E%20loading.remove()%2C%203000)%3B%0A%09%09window.sacitExtractorLoading%20%3D%20false%3B%0A%09%7D%3B%0A%09document.head.appendChild(script)%3B%0A%7D)()%3B" class="bookmarklet">📌 SacIT Extract Event (PRODUCTION)</a>
+
+  <div class="size-comparison">
+	<h3>🔄 How the Loader Works</h3>
+	<ul>
+	  <li><strong>Step 1:</strong> Tiny loader bookmarklet (~1537 chars) executes instantly</li>
+	  <li><strong>Step 2:</strong> Shows loading indicator while fetching full functionality</li>
+	  <li><strong>Step 3:</strong> Dynamically loads complete script from: <code>https://bookmarklet.sacitcentral.com/bookmarklet-full.js</code></li>
+	  <li><strong>Step 4:</strong> Runs full event extraction with all features</li>
+	</ul>
+  </div>
+
+  <div style="background-color: #f8d7da; padding: 15px; margin: 20px 0; border-radius: 5px;">
+	<strong>Environment:</strong> production<br>
+	<strong>API Endpoint:</strong> https://bookmarklet.sacitcentral.com/api/extract-event<br>
+	<strong>Full Script:</strong> https://bookmarklet.sacitcentral.com/bookmarklet-full.js
+  </div>
+
+  <details style="margin-top: 30px;">
+	<summary>📋 Technical Details</summary>
+	<h3>Loader Code (1088 characters):</h3>
+	<pre>(function() {
+	// Prevent multiple loads
+	if (window.sacitExtractorLoading) return;
+	window.sacitExtractorLoading = true;
+
+	// Show loading indicator
+	var loading = document.createElement('div');
+	loading.id = 'sacit-loader';
+	loading.innerHTML = '🔄 Loading SacIT Extractor...';
+	loading.style.cssText = 'position:fixed;top:20px;right:20px;background:#2196F3;color:white;padding:10px 15px;border-radius:4px;z-index:10000;font-family:Arial,sans-serif;font-size:14px;';
+	document.body.appendChild(loading);
+
+	// Load the full script
+	var script = document.createElement('script');
+	script.src = 'https://bookmarklet.sacitcentral.com/bookmarklet-full.js?v=' + Date.now();
+	script.onload = function() {
+		loading.remove();
+		if (window.sacitExtractor) {
+			window.sacitExtractor.run();
+		} else {
+			alert('Failed to load SacIT Extractor');
+		}
+		window.sacitExtractorLoading = false;
+	};
+	script.onerror = function() {
+		loading.innerHTML = '❌ Failed to load';
+		setTimeout(() => loading.remove(), 3000);
+		window.sacitExtractorLoading = false;
+	};
+	document.head.appendChild(script);
+})();</pre>
+
+	<h3>Size Breakdown:</h3>
+	<ul>
+	  <li>Raw loader code: 1,088 characters</li>
+	  <li>URL encoded: 1,537 characters (1.50 KB)</li>
+	  <li>Browser bookmark limit: ~2,048 characters (most browsers)</li>
+	  <li>Status: <span class="compatibility">SAFE</span></li>
+	</ul>
+  </details>
+
+  </div>
+</body>
+</html>

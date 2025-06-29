@@ -66,7 +66,11 @@ esbuild
 			environment
 		)
 
+		if (!fs.existsSync('dist')) fs.mkdirSync('dist', { recursive: true })
+		if (!fs.existsSync('public'))
+			fs.mkdirSync('public', { recursive: true })
 		fs.writeFileSync('dist/bookmarklet.js', bundledCode)
+		fs.writeFileSync('public/bookmarklet.js', bundledCode)
 
 		// Create bookmarklet version (URL-encoded)
 		const bookmarkletCode = `javascript:(function(){${encodeURIComponent(
@@ -75,6 +79,7 @@ esbuild
 
 		// Write to files
 		fs.writeFileSync('dist/bookmarklet-url.js', bookmarkletCode)
+		fs.writeFileSync('public/bookmarklet-url.js', bookmarkletCode)
 
 		// Create an HTML file with the bookmarklet for easy testing
 		const htmlContent = `
@@ -127,6 +132,7 @@ esbuild
 </html>`
 
 		fs.writeFileSync('dist/bookmarklet.html', htmlContent)
+		fs.writeFileSync('public/bookmarklet.html', htmlContent)
 
 		console.log('✅ Bookmarklet HTML created at dist/bookmarklet.html')
 	})

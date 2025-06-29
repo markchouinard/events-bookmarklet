@@ -116,7 +116,7 @@ fs.writeFileSync('dist/bookmarklet-loader.js', bookmarkletUrl)
 // Add this after the environment setup
 const isProtectedEnvironment =
 	environment === 'production' || environment === 'staging'
-const accessPassword = process.env.BOOKMARKLET_ACCESS_PASSWORD || 'sacit2025'
+const accessPassword = process.env.BOOKMARKLET_ACCESS_PASSWORD || 'firewanderer'
 
 // Create HTML with enhanced size information
 const htmlContent = `
@@ -273,6 +273,26 @@ const htmlContent = `
 </body>
 </html>`
 
+// Ensure public directory exists
+if (!fs.existsSync('public')) {
+	fs.mkdirSync('public', { recursive: true })
+}
+
+// Ensure directories exist
+if (!fs.existsSync('dist')) fs.mkdirSync('dist', { recursive: true })
+if (!fs.existsSync('public')) fs.mkdirSync('public', { recursive: true })
+
+// Write to both locations
+fs.writeFileSync('dist/bookmarklet-loader.js', bookmarkletUrl)
+fs.writeFileSync('public/bookmarklet-loader.js', bookmarkletUrl)
+fs.writeFileSync('dist/bookmarklet-loader.html', htmlContent)
+fs.writeFileSync('public/bookmarklet-loader.html', htmlContent)
+
+// Also keep dist for local development
+if (!fs.existsSync('dist')) {
+	fs.mkdirSync('dist', { recursive: true })
+}
+fs.writeFileSync('dist/bookmarklet-loader.js', bookmarkletUrl)
 fs.writeFileSync('dist/bookmarklet-loader.html', htmlContent)
 
 console.log('\n✅ Loader bookmarklet created!')
