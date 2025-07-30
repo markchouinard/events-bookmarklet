@@ -95,7 +95,7 @@ esbuild
 
   <p>Drag this link to your bookmarks bar:</p>
 
-  <a href="${bookmarkletCode}" class="bookmarklet">SacIT Extract Event (${environment.toUpperCase()})</a>
+  <a href="${bookmarkletCode}" class="bookmarklet">📌 SacIT Extract Event (${environment.toUpperCase()})</a>
 
   <div class="environment-notice" style="background-color: ${
 		environment === 'production'
