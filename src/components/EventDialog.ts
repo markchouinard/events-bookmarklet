@@ -59,20 +59,24 @@ export const showEventResult = (eventData: EventData): void => {
 	// Format each field
 	const eventFields = [
 		{ key: 'title', label: 'Title' },
-		{ key: 'description', label: 'Description' },
+		{ key: 'content', label: 'Description' },
 		{
-			key: 'start_time',
-			label: 'Start Time',
+			key: 'start_date',
+			label: 'Start Date',
 			format: (v: string) => new Date(v).toLocaleString(),
 		},
 		{
-			key: 'end_time',
-			label: 'End Time',
+			key: 'end_date',
+			label: 'End Date',
 			format: (v: string | undefined) =>
 				v ? new Date(v).toLocaleString() : 'N/A',
 		},
-		{ key: 'location', label: 'Location' },
-		{ key: 'source_url', label: 'Source URL' },
+		{ key: 'timezone', label: 'Timezone' },
+		{ key: 'all_day', label: 'All Day', format: (v: boolean) => v ? 'Yes' : 'No' },
+		{ key: 'venue', label: 'Venue' },
+		{ key: 'organizer', label: 'Organizer' },
+		{ key: 'cost', label: 'Cost' },
+		{ key: 'url', label: 'Source URL', format: (v: string) => v.substring(0, 100) + (v.length > 100 ? '...' : '') },
 		{
 			key: 'tags',
 			label: 'Tags',
@@ -83,20 +87,50 @@ export const showEventResult = (eventData: EventData): void => {
 
 	for (const field of eventFields) {
 		const fieldValue = eventData[field.key]
-		if (fieldValue) {
+		if (fieldValue !== undefined && fieldValue !== null && fieldValue !== '') {
 			const fieldDiv = document.createElement('div')
-			fieldDiv.style.marginBottom = '10px'
+			fieldDiv.style.marginBottom = '15px'
+			fieldDiv.style.paddingBottom = '10px'
+			fieldDiv.style.borderBottom = '1px solid #eee'
 
-			const label = document.createElement('strong')
-			label.textContent = field.label + ': '
+			const label = document.createElement('div')
+			label.textContent = field.label
+			label.style.fontWeight = 'bold'
+			label.style.color = '#2196F3'
+			label.style.marginBottom = '5px'
 			fieldDiv.appendChild(label)
 
-			const value = document.createElement('span')
-			value.textContent = field.format
-				? field.format(fieldValue)
-				: fieldValue
+			const value = document.createElement('div')
+			value.style.lineHeight = '1.4'
+			value.style.color = '#333'
+			
+			// Special handling for description to preserve formatting
+			if (field.key === 'content') {
+				value.style.maxHeight = '150px'
+				value.style.overflowY = 'auto'
+				value.style.padding = '8px'
+				value.style.backgroundColor = '#f9f9f9'
+				value.style.borderRadius = '4px'
+				value.style.whiteSpace = 'pre-wrap'
+			}
+			
+			// Special handling for URL to make it clickable
+			if (field.key === 'url') {
+				const link = document.createElement('a')
+				link.href = fieldValue
+				link.target = '_blank'
+				link.rel = 'noopener'
+				link.textContent = field.format ? field.format(fieldValue) : fieldValue
+				link.style.color = '#2196F3'
+				link.style.textDecoration = 'underline'
+				value.appendChild(link)
+			} else {
+				value.textContent = field.format
+					? field.format(fieldValue)
+					: fieldValue
+			}
+			
 			fieldDiv.appendChild(value)
-
 			contentDiv.appendChild(fieldDiv)
 		}
 	}
