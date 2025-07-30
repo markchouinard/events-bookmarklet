@@ -57,6 +57,15 @@ Given the raw text and URL of an event page, return ONLY a valid JSON object (no
 - url (the source URL provided)
 - cost (e.g., "Free", "$25", etc.)
 - tags (array of short keywords)
+- organizer (VERY IMPORTANT: Extract the organizer/host information - look for company names, organization names, group names, or host names. This could be in text like "Hosted by Oracle", "Organized by Tech Meetup Group", "Presented by Microsoft", etc.)
+
+IMPORTANT ORGANIZER EXTRACTION:
+- Look carefully for who is hosting, organizing, or presenting the event
+- This might be a company name (e.g., "Oracle", "Microsoft", "Google")
+- Or an organization/group name (e.g., "Sacramento Tech Meetup", "AI Professional Group")
+- Check for phrases like "Hosted by", "Organized by", "Presented by", "Sponsored by"
+- If multiple organizers, pick the primary one or combine them appropriately
+- If no clear organizer is found, leave empty string ""
 
 IMPORTANT DATE PARSING RULES:
 - If you see relative dates like "tomorrow", "next week", "this Friday", calculate from current date: ${currentDateString}
