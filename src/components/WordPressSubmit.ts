@@ -71,6 +71,7 @@ export const addWordPressSubmitButton = (
 			console.log('[SacIT] Submitting event with selected tags:', submissionData.tags)
 			console.log('[SacIT] Submitting event with selected image:', submissionData.image_url)
 			console.log('[SacIT] Submitting event as:', submissionData.status)
+			console.log('[SacIT] Submitting event content:', submissionData.content?.substring(0, 100) + '...')
 
 			// Make API request to your server
 			const response = await fetch(

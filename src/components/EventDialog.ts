@@ -238,14 +238,73 @@ export const showEventResult = (eventData: EventData): void => {
 			value.style.lineHeight = '1.4'
 			value.style.color = '#333'
 			
-			// Special handling for description to preserve formatting
-			if (field.key === 'content') {
-				value.style.maxHeight = '150px'
-				value.style.overflowY = 'auto'
-				value.style.padding = '8px'
-				value.style.backgroundColor = '#f9f9f9'
-				value.style.borderRadius = '4px'
-				value.style.whiteSpace = 'pre-wrap'
+			// Special handling for title to make it editable
+			if (field.key === 'title') {
+				// Create an input instead of a div for editable title
+				const titleInput = document.createElement('input')
+				titleInput.type = 'text'
+				titleInput.value = fieldValue
+				titleInput.style.width = '100%'
+				titleInput.style.padding = '8px'
+				titleInput.style.border = '1px solid #ddd'
+				titleInput.style.borderRadius = '4px'
+				titleInput.style.fontSize = '16px'
+				titleInput.style.fontFamily = 'Arial, sans-serif'
+				titleInput.style.fontWeight = 'bold'
+				titleInput.placeholder = 'Edit event title...'
+				
+				// Store the updated title back to eventData
+				titleInput.oninput = () => {
+					eventData.title = titleInput.value
+					console.log('[SacIT] Updated event title')
+				}
+				
+				value.appendChild(titleInput)
+				
+				// Add helper text
+				const helperText = document.createElement('div')
+				helperText.textContent = 'You can edit the title above'
+				helperText.style.fontSize = '11px'
+				helperText.style.color = '#666'
+				helperText.style.fontStyle = 'italic'
+				helperText.style.marginTop = '4px'
+				value.appendChild(helperText)
+			}
+			// Special handling for description to make it editable
+			else if (field.key === 'content') {
+				// Create a textarea instead of a div for editable content
+				const textarea = document.createElement('textarea')
+				textarea.value = fieldValue
+				textarea.style.width = '100%'
+				textarea.style.minHeight = '120px'
+				textarea.style.maxHeight = '200px'
+				textarea.style.padding = '8px'
+				textarea.style.backgroundColor = '#f9f9f9'
+				textarea.style.border = '1px solid #ddd'
+				textarea.style.borderRadius = '4px'
+				textarea.style.fontSize = '14px'
+				textarea.style.fontFamily = 'Arial, sans-serif'
+				textarea.style.lineHeight = '1.4'
+				textarea.style.resize = 'vertical'
+				textarea.placeholder = 'Edit event description...'
+				
+				// Store the updated content back to eventData
+				textarea.oninput = () => {
+					eventData.content = textarea.value
+					console.log('[SacIT] Updated event content')
+				}
+				
+				// Replace the value div with the textarea
+				value.appendChild(textarea)
+				
+				// Add helper text
+				const helperText = document.createElement('div')
+				helperText.textContent = 'You can edit the description above'
+				helperText.style.fontSize = '11px'
+				helperText.style.color = '#666'
+				helperText.style.fontStyle = 'italic'
+				helperText.style.marginTop = '4px'
+				value.appendChild(helperText)
 			}
 			
 			// Special handling for URL to make it clickable
@@ -323,9 +382,13 @@ export const showEventResult = (eventData: EventData): void => {
 				value.appendChild(helperText)
 			} 
 			else {
-				value.textContent = field.format
-					? field.format(fieldValue)
-					: fieldValue
+				// Only add regular text content for non-editable fields
+				// (title and content are handled above as editable fields)
+				if (field.key !== 'title' && field.key !== 'content') {
+					value.textContent = field.format
+						? field.format(fieldValue)
+						: fieldValue
+				}
 			}
 			
 			fieldDiv.appendChild(value)
