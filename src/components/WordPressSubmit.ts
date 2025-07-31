@@ -36,14 +36,17 @@ export const addWordPressSubmitButton = (
 			statusMessage.textContent = ''
 			statusMessage.style.display = 'inline'
 
-			// Prepare event data with selected tags
+			// Prepare event data with selected tags and image
 			const submissionData = {
 				...eventData,
 				// Use selectedTags if available, otherwise fall back to all tags
-				tags: eventData.selectedTags || eventData.tags
+				tags: eventData.selectedTags || eventData.tags,
+				// Use selectedImage URL if available, otherwise fall back to original image_url
+				image_url: eventData.selectedImage?.url || eventData.image_url
 			}
 			
 			console.log('[SacIT] Submitting event with selected tags:', submissionData.tags)
+			console.log('[SacIT] Submitting event with selected image:', submissionData.image_url)
 
 			// Make API request to your server
 			const response = await fetch(

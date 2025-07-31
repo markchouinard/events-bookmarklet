@@ -35,22 +35,156 @@ export const showEventResult = (eventData: EventData): void => {
 	title.style.color = '#2196F3'
 	dialog.appendChild(title)
 
-	// Add event image if available
-	if (eventData.image_url) {
-		const imageContainer = document.createElement('div')
-		imageContainer.style.marginBottom = '15px'
-		imageContainer.style.textAlign = 'center'
+	// Add image selection section if images are available
+	if (eventData.availableImages && eventData.availableImages.length > 0) {
+		const imageSection = document.createElement('div')
+		imageSection.style.marginBottom = '20px'
+		imageSection.style.borderBottom = '1px solid #eee'
+		imageSection.style.paddingBottom = '15px'
 
-		const image = document.createElement('img')
-		image.src = eventData.image_url
-		image.alt = eventData.title || 'Event image'
-		image.style.maxWidth = '100%'
-		image.style.maxHeight = '300px'
-		image.style.borderRadius = '4px'
-		image.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)'
+		const imageTitle = document.createElement('h3')
+		imageTitle.textContent = 'Select Event Image'
+		imageTitle.style.margin = '0 0 10px 0'
+		imageTitle.style.color = '#2196F3'
+		imageTitle.style.fontSize = '16px'
+		imageSection.appendChild(imageTitle)
 
-		imageContainer.appendChild(image)
-		dialog.appendChild(imageContainer)
+		// Initialize selectedImage if not set (default to first image)
+		if (!eventData.selectedImage && eventData.availableImages.length > 0) {
+			eventData.selectedImage = eventData.availableImages[0]
+		}
+
+		// Create radio button group for image selection
+		const imageGrid = document.createElement('div')
+		imageGrid.style.display = 'grid'
+		imageGrid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(120px, 1fr))'
+		imageGrid.style.gap = '10px'
+		imageGrid.style.marginBottom = '10px'
+
+		// Add "No image" option
+		const noImageOption = document.createElement('div')
+		noImageOption.style.display = 'flex'
+		noImageOption.style.flexDirection = 'column'
+		noImageOption.style.alignItems = 'center'
+		noImageOption.style.padding = '8px'
+		noImageOption.style.border = '2px solid #ddd'
+		noImageOption.style.borderRadius = '4px'
+		noImageOption.style.cursor = 'pointer'
+		noImageOption.style.backgroundColor = '#f9f9f9'
+
+		const noImageRadio = document.createElement('input')
+		noImageRadio.type = 'radio'
+		noImageRadio.name = 'eventImage'
+		noImageRadio.id = 'no-image'
+		noImageRadio.style.marginBottom = '5px'
+
+		const noImageLabel = document.createElement('label')
+		noImageLabel.textContent = 'No Image'
+		noImageLabel.htmlFor = 'no-image'
+		noImageLabel.style.fontSize = '12px'
+		noImageLabel.style.textAlign = 'center'
+		noImageLabel.style.cursor = 'pointer'
+
+		noImageOption.appendChild(noImageRadio)
+		noImageOption.appendChild(noImageLabel)
+
+		noImageRadio.onchange = () => {
+			if (noImageRadio.checked) {
+				eventData.selectedImage = null
+				// Update border styles
+				document.querySelectorAll('[name="eventImage"]').forEach((radio, index) => {
+					const container = radio.parentElement as HTMLElement
+					if (radio.checked) {
+						container.style.borderColor = '#2196F3'
+						container.style.backgroundColor = '#e3f2fd'
+					} else {
+						container.style.borderColor = '#ddd'
+						container.style.backgroundColor = index === 0 ? '#f9f9f9' : '#fff'
+					}
+				})
+				console.log('[SacIT] Selected image: none')
+			}
+		}
+
+		imageGrid.appendChild(noImageOption)
+
+		// Add image options (up to 5)
+		eventData.availableImages.slice(0, 5).forEach((imageInfo, index) => {
+			const imageOption = document.createElement('div')
+			imageOption.style.display = 'flex'
+			imageOption.style.flexDirection = 'column'
+			imageOption.style.alignItems = 'center'
+			imageOption.style.padding = '8px'
+			imageOption.style.border = '2px solid #ddd'
+			imageOption.style.borderRadius = '4px'
+			imageOption.style.cursor = 'pointer'
+			imageOption.style.backgroundColor = '#fff'
+
+			// Set first image as selected by default
+			if (index === 0 && eventData.selectedImage === imageInfo) {
+				imageOption.style.borderColor = '#2196F3'
+				imageOption.style.backgroundColor = '#e3f2fd'
+			}
+
+			const radio = document.createElement('input')
+			radio.type = 'radio'
+			radio.name = 'eventImage'
+			radio.id = `image-${index}`
+			radio.checked = eventData.selectedImage === imageInfo
+			radio.style.marginBottom = '5px'
+
+			const img = document.createElement('img')
+			img.src = imageInfo.url
+			img.alt = imageInfo.alt || 'Event image option'
+			img.style.width = '80px'
+			img.style.height = '60px'
+			img.style.objectFit = 'cover'
+			img.style.borderRadius = '2px'
+			img.style.marginBottom = '5px'
+
+			const imageLabel = document.createElement('label')
+			imageLabel.htmlFor = `image-${index}`
+			imageLabel.style.fontSize = '10px'
+			imageLabel.style.textAlign = 'center'
+			imageLabel.style.cursor = 'pointer'
+			imageLabel.style.lineHeight = '1.2'
+			imageLabel.textContent = `${imageInfo.dimensions || 'Unknown size'}`
+
+			radio.onchange = () => {
+				if (radio.checked) {
+					eventData.selectedImage = imageInfo
+					// Update border styles
+					document.querySelectorAll('[name="eventImage"]').forEach((r, i) => {
+						const container = r.parentElement as HTMLElement
+						if (r.checked) {
+							container.style.borderColor = '#2196F3'
+							container.style.backgroundColor = '#e3f2fd'
+						} else {
+							container.style.borderColor = '#ddd'
+							container.style.backgroundColor = i === 0 ? '#f9f9f9' : '#fff'
+						}
+					})
+					console.log('[SacIT] Selected image:', imageInfo)
+				}
+			}
+
+			imageOption.appendChild(radio)
+			imageOption.appendChild(img)
+			imageOption.appendChild(imageLabel)
+			imageGrid.appendChild(imageOption)
+		})
+
+		imageSection.appendChild(imageGrid)
+
+		// Add helper text
+		const helperText = document.createElement('div')
+		helperText.textContent = 'Choose an image to use for this event, or select "No Image"'
+		helperText.style.fontSize = '12px'
+		helperText.style.color = '#666'
+		helperText.style.fontStyle = 'italic'
+		imageSection.appendChild(helperText)
+
+		dialog.appendChild(imageSection)
 	}
 
 	// Add event data in a nice format

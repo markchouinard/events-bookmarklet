@@ -140,8 +140,10 @@ ${content.slice(0, 3000)}
 			return res.json({ result: eventData })
 		}
 
+		// Pass the original images array so frontend can let user choose
 		if (images && images.length > 0) {
-			eventData.image_url = images[0].url
+			eventData.image_url = images[0].url // Keep for backward compatibility
+			eventData.availableImages = images.slice(0, 5) // Pass top 5 images for selection
 		}
 
 		res.json({ result: eventData })
