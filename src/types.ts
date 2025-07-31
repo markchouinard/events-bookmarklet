@@ -9,6 +9,7 @@ export interface EventData {
 	location?: string
 	source_url?: string
 	tags?: string[] | string
+	selectedTags?: string[] // Tags selected by user via checkboxes
 	image_url?: string | null
 	raw?: string
 	_rawResponse?: string

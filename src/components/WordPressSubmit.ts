@@ -36,6 +36,15 @@ export const addWordPressSubmitButton = (
 			statusMessage.textContent = ''
 			statusMessage.style.display = 'inline'
 
+			// Prepare event data with selected tags
+			const submissionData = {
+				...eventData,
+				// Use selectedTags if available, otherwise fall back to all tags
+				tags: eventData.selectedTags || eventData.tags
+			}
+			
+			console.log('[SacIT] Submitting event with selected tags:', submissionData.tags)
+
 			// Make API request to your server
 			const response = await fetch(
 				`${API_URL.replace('/extract-event', '')}/submit-to-wordpress`,
@@ -45,7 +54,7 @@ export const addWordPressSubmitButton = (
 						'Content-Type': 'application/json',
 						'X-SacIT-Token': 'secret123',
 					},
-					body: JSON.stringify({ eventData }),
+					body: JSON.stringify({ eventData: submissionData }),
 				}
 			)
 

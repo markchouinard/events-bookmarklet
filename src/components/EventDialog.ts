@@ -124,7 +124,71 @@ export const showEventResult = (eventData: EventData): void => {
 				link.style.color = '#2196F3'
 				link.style.textDecoration = 'underline'
 				value.appendChild(link)
-			} else {
+			} 
+			// Special handling for tags to add checkboxes
+			else if (field.key === 'tags' && Array.isArray(fieldValue)) {
+				value.style.display = 'flex'
+				value.style.flexWrap = 'wrap'
+				value.style.gap = '8px'
+				
+				// Store selected tags on the event data for later use
+				if (!eventData.selectedTags) {
+					eventData.selectedTags = [...fieldValue] // All tags selected by default
+				}
+				
+				fieldValue.forEach((tag: string, index: number) => {
+					const tagContainer = document.createElement('div')
+					tagContainer.style.display = 'flex'
+					tagContainer.style.alignItems = 'center'
+					tagContainer.style.backgroundColor = '#f0f8ff'
+					tagContainer.style.border = '1px solid #ddd'
+					tagContainer.style.borderRadius = '4px'
+					tagContainer.style.padding = '4px 8px'
+					tagContainer.style.fontSize = '14px'
+					
+					const checkbox = document.createElement('input')
+					checkbox.type = 'checkbox'
+					checkbox.checked = true // All tags selected by default
+					checkbox.style.marginRight = '6px'
+					checkbox.id = `tag-${index}`
+					
+					const tagLabel = document.createElement('label')
+					tagLabel.textContent = tag
+					tagLabel.htmlFor = `tag-${index}`
+					tagLabel.style.cursor = 'pointer'
+					tagLabel.style.fontSize = '14px'
+					
+					// Update selected tags when checkbox changes
+					checkbox.onchange = () => {
+						if (checkbox.checked) {
+							if (!eventData.selectedTags.includes(tag)) {
+								eventData.selectedTags.push(tag)
+							}
+						} else {
+							const tagIndex = eventData.selectedTags.indexOf(tag)
+							if (tagIndex > -1) {
+								eventData.selectedTags.splice(tagIndex, 1)
+							}
+						}
+						console.log('[SacIT] Selected tags:', eventData.selectedTags)
+					}
+					
+					tagContainer.appendChild(checkbox)
+					tagContainer.appendChild(tagLabel)
+					value.appendChild(tagContainer)
+				})
+				
+				// Add helper text
+				const helperText = document.createElement('div')
+				helperText.textContent = 'Uncheck tags you don\'t want to include when submitting to SacIT Central'
+				helperText.style.fontSize = '12px'
+				helperText.style.color = '#666'
+				helperText.style.fontStyle = 'italic'
+				helperText.style.marginTop = '8px'
+				helperText.style.width = '100%'
+				value.appendChild(helperText)
+			} 
+			else {
 				value.textContent = field.format
 					? field.format(fieldValue)
 					: fieldValue
