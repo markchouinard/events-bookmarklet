@@ -128,7 +128,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			show_map: true,
 			show_map_link: true,
 			featured: false,
-			status: 'draft',
+			status: eventData.status || 'draft', // Use provided status or default to draft
 		}
 
 		console.log('📝 Creating event in WordPress...')

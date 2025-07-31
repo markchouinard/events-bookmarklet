@@ -12,6 +12,27 @@ export const addWordPressSubmitButton = (
 	wpContainer.style.borderTop = '1px solid #eee'
 	wpContainer.style.paddingTop = '15px'
 
+	// Create publish option checkbox
+	const publishOption = document.createElement('div')
+	publishOption.style.marginBottom = '15px'
+	publishOption.style.display = 'flex'
+	publishOption.style.alignItems = 'center'
+
+	const publishCheckbox = document.createElement('input')
+	publishCheckbox.type = 'checkbox'
+	publishCheckbox.id = 'publish-immediately'
+	publishCheckbox.style.marginRight = '8px'
+
+	const publishLabel = document.createElement('label')
+	publishLabel.htmlFor = 'publish-immediately'
+	publishLabel.textContent = 'Publish immediately (unchecked = save as draft)'
+	publishLabel.style.fontSize = '14px'
+	publishLabel.style.cursor = 'pointer'
+	publishLabel.style.color = '#333'
+
+	publishOption.appendChild(publishCheckbox)
+	publishOption.appendChild(publishLabel)
+
 	// Create submit button
 	const submitButton = document.createElement('button')
 	submitButton.textContent = 'Submit to SacIT Central'
@@ -36,6 +57,22 @@ export const addWordPressSubmitButton = (
 			statusMessage.textContent = ''
 			statusMessage.style.display = 'inline'
 
+			// Prepare event data with selected tags, image, and publish status
+			const submissionData = {
+				...eventData,
+				// Use selectedTags if available, otherwise fall back to all tags
+				tags: eventData.selectedTags || eventData.tags,
+				// Use selectedImage URL if available, otherwise fall back to original image_url
+				image_url: eventData.selectedImage?.url || eventData.image_url,
+				// Add publish status (draft by default, publish if checked)
+				status: publishCheckbox.checked ? 'publish' : 'draft'
+			}
+			
+			console.log('[SacIT] Submitting event with selected tags:', submissionData.tags)
+			console.log('[SacIT] Submitting event with selected image:', submissionData.image_url)
+			console.log('[SacIT] Submitting event as:', submissionData.status)
+			console.log('[SacIT] Submitting event content:', submissionData.content?.substring(0, 100) + '...')
+
 			// Make API request to your server
 			const response = await fetch(
 				`${API_URL.replace('/extract-event', '')}/submit-to-wordpress`,
@@ -45,25 +82,26 @@ export const addWordPressSubmitButton = (
 						'Content-Type': 'application/json',
 						'X-SacIT-Token': 'secret123',
 					},
-					body: JSON.stringify({ eventData }),
+					body: JSON.stringify({ eventData: submissionData }),
 				}
 			)
 
 			const result = await response.json()
 
 			if (result.success) {
-				statusMessage.textContent = '✓ Event submitted successfully!'
+				const isPublished = submissionData.status === 'publish'
+				statusMessage.textContent = `✓ Event ${isPublished ? 'published' : 'saved as draft'} successfully!`
 				statusMessage.style.color = '#4CAF50'
 
 				// Show notification
 				showNotification(
-					'Event submitted to SacIT Central!',
+					`Event ${isPublished ? 'published' : 'saved as draft'} to SacIT Central!`,
 					'success',
-					`The event "${eventData.title}" has been submitted as a draft.`
+					`The event "${eventData.title}" has been ${isPublished ? 'published' : 'saved as a draft'}.`
 				)
 
 				// Disable button to prevent duplicate submissions
-				submitButton.textContent = 'Submitted ✓'
+				submitButton.textContent = `${isPublished ? 'Published' : 'Saved as Draft'} ✓`
 				submitButton.style.backgroundColor = '#888'
 			} else {
 				throw new Error(result.message || 'Unknown error')
@@ -81,6 +119,7 @@ export const addWordPressSubmitButton = (
 	}
 
 	// Add elements to container
+	wpContainer.appendChild(publishOption)
 	wpContainer.appendChild(submitButton)
 	wpContainer.appendChild(statusMessage)
 

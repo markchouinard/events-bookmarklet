@@ -35,22 +35,156 @@ export const showEventResult = (eventData: EventData): void => {
 	title.style.color = '#2196F3'
 	dialog.appendChild(title)
 
-	// Add event image if available
-	if (eventData.image_url) {
-		const imageContainer = document.createElement('div')
-		imageContainer.style.marginBottom = '15px'
-		imageContainer.style.textAlign = 'center'
+	// Add image selection section if images are available
+	if (eventData.availableImages && eventData.availableImages.length > 0) {
+		const imageSection = document.createElement('div')
+		imageSection.style.marginBottom = '20px'
+		imageSection.style.borderBottom = '1px solid #eee'
+		imageSection.style.paddingBottom = '15px'
 
-		const image = document.createElement('img')
-		image.src = eventData.image_url
-		image.alt = eventData.title || 'Event image'
-		image.style.maxWidth = '100%'
-		image.style.maxHeight = '300px'
-		image.style.borderRadius = '4px'
-		image.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)'
+		const imageTitle = document.createElement('h3')
+		imageTitle.textContent = 'Select Event Image'
+		imageTitle.style.margin = '0 0 10px 0'
+		imageTitle.style.color = '#2196F3'
+		imageTitle.style.fontSize = '16px'
+		imageSection.appendChild(imageTitle)
 
-		imageContainer.appendChild(image)
-		dialog.appendChild(imageContainer)
+		// Initialize selectedImage if not set (default to first image)
+		if (!eventData.selectedImage && eventData.availableImages.length > 0) {
+			eventData.selectedImage = eventData.availableImages[0]
+		}
+
+		// Create radio button group for image selection
+		const imageGrid = document.createElement('div')
+		imageGrid.style.display = 'grid'
+		imageGrid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(120px, 1fr))'
+		imageGrid.style.gap = '10px'
+		imageGrid.style.marginBottom = '10px'
+
+		// Add "No image" option
+		const noImageOption = document.createElement('div')
+		noImageOption.style.display = 'flex'
+		noImageOption.style.flexDirection = 'column'
+		noImageOption.style.alignItems = 'center'
+		noImageOption.style.padding = '8px'
+		noImageOption.style.border = '2px solid #ddd'
+		noImageOption.style.borderRadius = '4px'
+		noImageOption.style.cursor = 'pointer'
+		noImageOption.style.backgroundColor = '#f9f9f9'
+
+		const noImageRadio = document.createElement('input')
+		noImageRadio.type = 'radio'
+		noImageRadio.name = 'eventImage'
+		noImageRadio.id = 'no-image'
+		noImageRadio.style.marginBottom = '5px'
+
+		const noImageLabel = document.createElement('label')
+		noImageLabel.textContent = 'No Image'
+		noImageLabel.htmlFor = 'no-image'
+		noImageLabel.style.fontSize = '12px'
+		noImageLabel.style.textAlign = 'center'
+		noImageLabel.style.cursor = 'pointer'
+
+		noImageOption.appendChild(noImageRadio)
+		noImageOption.appendChild(noImageLabel)
+
+		noImageRadio.onchange = () => {
+			if (noImageRadio.checked) {
+				eventData.selectedImage = null
+				// Update border styles
+				document.querySelectorAll('[name="eventImage"]').forEach((radio, index) => {
+					const container = radio.parentElement as HTMLElement
+					if (radio.checked) {
+						container.style.borderColor = '#2196F3'
+						container.style.backgroundColor = '#e3f2fd'
+					} else {
+						container.style.borderColor = '#ddd'
+						container.style.backgroundColor = index === 0 ? '#f9f9f9' : '#fff'
+					}
+				})
+				console.log('[SacIT] Selected image: none')
+			}
+		}
+
+		imageGrid.appendChild(noImageOption)
+
+		// Add image options (up to 5)
+		eventData.availableImages.slice(0, 5).forEach((imageInfo, index) => {
+			const imageOption = document.createElement('div')
+			imageOption.style.display = 'flex'
+			imageOption.style.flexDirection = 'column'
+			imageOption.style.alignItems = 'center'
+			imageOption.style.padding = '8px'
+			imageOption.style.border = '2px solid #ddd'
+			imageOption.style.borderRadius = '4px'
+			imageOption.style.cursor = 'pointer'
+			imageOption.style.backgroundColor = '#fff'
+
+			// Set first image as selected by default
+			if (index === 0 && eventData.selectedImage === imageInfo) {
+				imageOption.style.borderColor = '#2196F3'
+				imageOption.style.backgroundColor = '#e3f2fd'
+			}
+
+			const radio = document.createElement('input')
+			radio.type = 'radio'
+			radio.name = 'eventImage'
+			radio.id = `image-${index}`
+			radio.checked = eventData.selectedImage === imageInfo
+			radio.style.marginBottom = '5px'
+
+			const img = document.createElement('img')
+			img.src = imageInfo.url
+			img.alt = imageInfo.alt || 'Event image option'
+			img.style.width = '80px'
+			img.style.height = '60px'
+			img.style.objectFit = 'cover'
+			img.style.borderRadius = '2px'
+			img.style.marginBottom = '5px'
+
+			const imageLabel = document.createElement('label')
+			imageLabel.htmlFor = `image-${index}`
+			imageLabel.style.fontSize = '10px'
+			imageLabel.style.textAlign = 'center'
+			imageLabel.style.cursor = 'pointer'
+			imageLabel.style.lineHeight = '1.2'
+			imageLabel.textContent = `${imageInfo.dimensions || 'Unknown size'}`
+
+			radio.onchange = () => {
+				if (radio.checked) {
+					eventData.selectedImage = imageInfo
+					// Update border styles
+					document.querySelectorAll('[name="eventImage"]').forEach((r, i) => {
+						const container = r.parentElement as HTMLElement
+						if (r.checked) {
+							container.style.borderColor = '#2196F3'
+							container.style.backgroundColor = '#e3f2fd'
+						} else {
+							container.style.borderColor = '#ddd'
+							container.style.backgroundColor = i === 0 ? '#f9f9f9' : '#fff'
+						}
+					})
+					console.log('[SacIT] Selected image:', imageInfo)
+				}
+			}
+
+			imageOption.appendChild(radio)
+			imageOption.appendChild(img)
+			imageOption.appendChild(imageLabel)
+			imageGrid.appendChild(imageOption)
+		})
+
+		imageSection.appendChild(imageGrid)
+
+		// Add helper text
+		const helperText = document.createElement('div')
+		helperText.textContent = 'Choose an image to use for this event, or select "No Image"'
+		helperText.style.fontSize = '12px'
+		helperText.style.color = '#666'
+		helperText.style.fontStyle = 'italic'
+		imageSection.appendChild(helperText)
+
+		dialog.appendChild(imageSection)
 	}
 
 	// Add event data in a nice format
@@ -104,14 +238,73 @@ export const showEventResult = (eventData: EventData): void => {
 			value.style.lineHeight = '1.4'
 			value.style.color = '#333'
 			
-			// Special handling for description to preserve formatting
-			if (field.key === 'content') {
-				value.style.maxHeight = '150px'
-				value.style.overflowY = 'auto'
-				value.style.padding = '8px'
-				value.style.backgroundColor = '#f9f9f9'
-				value.style.borderRadius = '4px'
-				value.style.whiteSpace = 'pre-wrap'
+			// Special handling for title to make it editable
+			if (field.key === 'title') {
+				// Create an input instead of a div for editable title
+				const titleInput = document.createElement('input')
+				titleInput.type = 'text'
+				titleInput.value = fieldValue
+				titleInput.style.width = '100%'
+				titleInput.style.padding = '8px'
+				titleInput.style.border = '1px solid #ddd'
+				titleInput.style.borderRadius = '4px'
+				titleInput.style.fontSize = '16px'
+				titleInput.style.fontFamily = 'Arial, sans-serif'
+				titleInput.style.fontWeight = 'bold'
+				titleInput.placeholder = 'Edit event title...'
+				
+				// Store the updated title back to eventData
+				titleInput.oninput = () => {
+					eventData.title = titleInput.value
+					console.log('[SacIT] Updated event title')
+				}
+				
+				value.appendChild(titleInput)
+				
+				// Add helper text
+				const helperText = document.createElement('div')
+				helperText.textContent = 'You can edit the title above'
+				helperText.style.fontSize = '11px'
+				helperText.style.color = '#666'
+				helperText.style.fontStyle = 'italic'
+				helperText.style.marginTop = '4px'
+				value.appendChild(helperText)
+			}
+			// Special handling for description to make it editable
+			else if (field.key === 'content') {
+				// Create a textarea instead of a div for editable content
+				const textarea = document.createElement('textarea')
+				textarea.value = fieldValue
+				textarea.style.width = '100%'
+				textarea.style.minHeight = '120px'
+				textarea.style.maxHeight = '200px'
+				textarea.style.padding = '8px'
+				textarea.style.backgroundColor = '#f9f9f9'
+				textarea.style.border = '1px solid #ddd'
+				textarea.style.borderRadius = '4px'
+				textarea.style.fontSize = '14px'
+				textarea.style.fontFamily = 'Arial, sans-serif'
+				textarea.style.lineHeight = '1.4'
+				textarea.style.resize = 'vertical'
+				textarea.placeholder = 'Edit event description...'
+				
+				// Store the updated content back to eventData
+				textarea.oninput = () => {
+					eventData.content = textarea.value
+					console.log('[SacIT] Updated event content')
+				}
+				
+				// Replace the value div with the textarea
+				value.appendChild(textarea)
+				
+				// Add helper text
+				const helperText = document.createElement('div')
+				helperText.textContent = 'You can edit the description above'
+				helperText.style.fontSize = '11px'
+				helperText.style.color = '#666'
+				helperText.style.fontStyle = 'italic'
+				helperText.style.marginTop = '4px'
+				value.appendChild(helperText)
 			}
 			
 			// Special handling for URL to make it clickable
@@ -124,10 +317,78 @@ export const showEventResult = (eventData: EventData): void => {
 				link.style.color = '#2196F3'
 				link.style.textDecoration = 'underline'
 				value.appendChild(link)
-			} else {
-				value.textContent = field.format
-					? field.format(fieldValue)
-					: fieldValue
+			} 
+			// Special handling for tags to add checkboxes
+			else if (field.key === 'tags' && Array.isArray(fieldValue)) {
+				value.style.display = 'flex'
+				value.style.flexWrap = 'wrap'
+				value.style.gap = '8px'
+				
+				// Store selected tags on the event data for later use
+				if (!eventData.selectedTags) {
+					eventData.selectedTags = [...fieldValue] // All tags selected by default
+				}
+				
+				fieldValue.forEach((tag: string, index: number) => {
+					const tagContainer = document.createElement('div')
+					tagContainer.style.display = 'flex'
+					tagContainer.style.alignItems = 'center'
+					tagContainer.style.backgroundColor = '#f0f8ff'
+					tagContainer.style.border = '1px solid #ddd'
+					tagContainer.style.borderRadius = '4px'
+					tagContainer.style.padding = '4px 8px'
+					tagContainer.style.fontSize = '14px'
+					
+					const checkbox = document.createElement('input')
+					checkbox.type = 'checkbox'
+					checkbox.checked = true // All tags selected by default
+					checkbox.style.marginRight = '6px'
+					checkbox.id = `tag-${index}`
+					
+					const tagLabel = document.createElement('label')
+					tagLabel.textContent = tag
+					tagLabel.htmlFor = `tag-${index}`
+					tagLabel.style.cursor = 'pointer'
+					tagLabel.style.fontSize = '14px'
+					
+					// Update selected tags when checkbox changes
+					checkbox.onchange = () => {
+						if (checkbox.checked) {
+							if (!eventData.selectedTags.includes(tag)) {
+								eventData.selectedTags.push(tag)
+							}
+						} else {
+							const tagIndex = eventData.selectedTags.indexOf(tag)
+							if (tagIndex > -1) {
+								eventData.selectedTags.splice(tagIndex, 1)
+							}
+						}
+						console.log('[SacIT] Selected tags:', eventData.selectedTags)
+					}
+					
+					tagContainer.appendChild(checkbox)
+					tagContainer.appendChild(tagLabel)
+					value.appendChild(tagContainer)
+				})
+				
+				// Add helper text
+				const helperText = document.createElement('div')
+				helperText.textContent = 'Uncheck tags you don\'t want to include when submitting to SacIT Central'
+				helperText.style.fontSize = '12px'
+				helperText.style.color = '#666'
+				helperText.style.fontStyle = 'italic'
+				helperText.style.marginTop = '8px'
+				helperText.style.width = '100%'
+				value.appendChild(helperText)
+			} 
+			else {
+				// Only add regular text content for non-editable fields
+				// (title and content are handled above as editable fields)
+				if (field.key !== 'title' && field.key !== 'content') {
+					value.textContent = field.format
+						? field.format(fieldValue)
+						: fieldValue
+				}
 			}
 			
 			fieldDiv.appendChild(value)
