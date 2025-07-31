@@ -49,13 +49,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		})
 
 		if (!wpApiUrl || !username || !appPassword) {
+			console.error('❌ Missing WordPress configuration:', {
+				wpApiUrl: wpApiUrl || 'MISSING',
+				username: username || 'MISSING', 
+				appPassword: appPassword ? '[HIDDEN]' : 'MISSING'
+			})
 			throw new Error('Missing WordPress configuration')
 		}
+
+		console.log('✅ WordPress configuration validated, proceeding...')
 
 		// Create Basic Auth header
 		const auth = Buffer.from(`${username}:${appPassword}`).toString(
 			'base64'
 		)
+		console.log('🔐 Auth header created successfully')
 
 		console.log('🏢 Processing venue...')
 		let venueId = 0
@@ -132,8 +140,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		console.log('📝 Creating event in WordPress...')
+		console.log('API URL:', `${wpApiUrl}/tribe/events/v1/events`)
 		console.log('Request body:', JSON.stringify(requestBody, null, 2))
 
+		console.log('🚀 About to send request to WordPress API...')
 		const response = await fetch(`${wpApiUrl}/tribe/events/v1/events`, {
 			method: 'POST',
 			headers: {
