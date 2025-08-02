@@ -128,6 +128,17 @@ esbuild
 
 		fs.writeFileSync('dist/bookmarklet.html', htmlContent)
 
+		// Copy index.html from public to dist
+		const publicIndexPath = path.join(__dirname, '..', 'public', 'index.html')
+		const distIndexPath = path.join(__dirname, '..', 'dist', 'index.html')
+		
+		if (fs.existsSync(publicIndexPath)) {
+			fs.copyFileSync(publicIndexPath, distIndexPath)
+			console.log('✅ Index page copied from public/ to dist/')
+		} else {
+			console.log('⚠️  No index.html found in public/ directory')
+		}
+
 		console.log('✅ Bookmarklet HTML created at dist/bookmarklet.html')
 	})
 	.catch((err) => {
