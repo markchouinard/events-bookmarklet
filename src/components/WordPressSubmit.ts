@@ -21,6 +21,7 @@ export const addWordPressSubmitButton = (
 	const publishCheckbox = document.createElement('input')
 	publishCheckbox.type = 'checkbox'
 	publishCheckbox.id = 'publish-immediately'
+	publishCheckbox.checked = true
 	publishCheckbox.style.marginRight = '8px'
 
 	const publishLabel = document.createElement('label')
@@ -65,13 +66,22 @@ export const addWordPressSubmitButton = (
 				// Use selectedImage URL if available, otherwise fall back to original image_url
 				image_url: eventData.selectedImage?.url || eventData.image_url,
 				// Add publish status (draft by default, publish if checked)
-				status: publishCheckbox.checked ? 'publish' : 'draft'
+				status: publishCheckbox.checked ? 'publish' : 'draft',
 			}
-			
-			console.log('[SacIT] Submitting event with selected tags:', submissionData.tags)
-			console.log('[SacIT] Submitting event with selected image:', submissionData.image_url)
+
+			console.log(
+				'[SacIT] Submitting event with selected tags:',
+				submissionData.tags
+			)
+			console.log(
+				'[SacIT] Submitting event with selected image:',
+				submissionData.image_url
+			)
 			console.log('[SacIT] Submitting event as:', submissionData.status)
-			console.log('[SacIT] Submitting event content:', submissionData.content?.substring(0, 100) + '...')
+			console.log(
+				'[SacIT] Submitting event content:',
+				submissionData.content?.substring(0, 100) + '...'
+			)
 
 			// Make API request to your server
 			const response = await fetch(
@@ -90,18 +100,26 @@ export const addWordPressSubmitButton = (
 
 			if (result.success) {
 				const isPublished = submissionData.status === 'publish'
-				statusMessage.textContent = `✓ Event ${isPublished ? 'published' : 'saved as draft'} successfully!`
+				statusMessage.textContent = `✓ Event ${
+					isPublished ? 'published' : 'saved as draft'
+				} successfully!`
 				statusMessage.style.color = '#4CAF50'
 
 				// Show notification
 				showNotification(
-					`Event ${isPublished ? 'published' : 'saved as draft'} to SacIT Central!`,
+					`Event ${
+						isPublished ? 'published' : 'saved as draft'
+					} to SacIT Central!`,
 					'success',
-					`The event "${eventData.title}" has been ${isPublished ? 'published' : 'saved as a draft'}.`
+					`The event "${eventData.title}" has been ${
+						isPublished ? 'published' : 'saved as a draft'
+					}.`
 				)
 
 				// Disable button to prevent duplicate submissions
-				submitButton.textContent = `${isPublished ? 'Published' : 'Saved as Draft'} ✓`
+				submitButton.textContent = `${
+					isPublished ? 'Published' : 'Saved as Draft'
+				} ✓`
 				submitButton.style.backgroundColor = '#888'
 			} else {
 				throw new Error(result.message || 'Unknown error')
